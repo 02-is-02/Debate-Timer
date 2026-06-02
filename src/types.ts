@@ -1,24 +1,30 @@
+export type StageType = "single" | "double" | "free" | "none";
 
 interface BaseStage {
 	id: string;
 	title: string;
 }
 
-// 1. 单计时器环节（比如：正方立论）
 export interface SingleStage extends BaseStage {
 	type: "single";
 	timeLimit: number;
 }
 
-// 2. 双计时器/自由辩环节（比如：自由辩论、奇袭）
-export interface MultiStage extends BaseStage {
-	type: "double" | "free";
+export interface DoubleStage extends BaseStage {
+	type: "double";
 	leftTimeLimit: number;
 	rightTimeLimit: number;
+}
+
+export interface FreeStage extends BaseStage {
+	type: "free";
+	leftTimeLimit: number;
+	rightTimeLimit: number;
+	start: "left" | "right";
 }
 
 export interface NoneStage extends BaseStage {
 	type: "none";
 }
 
-export type DebateStage = SingleStage | MultiStage | NoneStage;
+export type DebateStage = SingleStage | DoubleStage | FreeStage | NoneStage;

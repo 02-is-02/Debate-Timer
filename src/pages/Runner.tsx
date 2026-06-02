@@ -1,25 +1,22 @@
-import { act, useState } from "react";
+import { useState } from "react";
 import Timer from "../components/Timer";
 import GlobalControls from "../components/GlobalControls";
 import { DebateStage } from "../types";
 import "./App.css";
 
-const STAGES: DebateStage[] = [
-  { id: "1", type: "single", title: "正方一辩立论", timeLimit: 180 },
-  { id: "2", type: "single", title: "反方一辩立论", timeLimit: 180 },
-  { id: "3", type: "free", title: "自由辩论", leftTimeLimit: 240, rightTimeLimit: 241 },
-  { id: "4", type: "none", title: "评委点评 (无计时)" },
-];
+interface RunnerProps {
+	stages: DebateStage[];
+}
 
-function Runner() {
+function Runner({stages}: RunnerProps) {
 	const [isPlaying, setIsPlaying] = useState(false);
 	const [currIndex, setCurrIndex] = useState(0);
 	const [activeSide, setActiveSide] = useState<"left" | "right" | "none">("none");
 	const [resetKey, setResetKey] = useState(0);
 
-	const currStage = STAGES[currIndex];
+	const currStage = stages[currIndex];
 	const isFirstPage = currIndex === 0;
-	const isLastPage = currIndex === STAGES.length - 1;
+	const isLastPage = currIndex === stages.length - 1;
 
 	const handleNext = () => {
 		if (!isLastPage) setCurrIndex((prev) => prev + 1);
@@ -100,7 +97,7 @@ function Runner() {
 						</div>
 						<GlobalControls 
 						activeSide={activeSide} 
-						onSwitch={() => setActiveSide(activeSide === "none" ? "left" : (activeSide === "left" ? "right" : "left"))} 
+						onSwitch={() => setActiveSide(activeSide === "none" ? (currStage.start || "left") : (activeSide === "left" ? "right" : "left"))} 
 						onGlobalReset={() => { setActiveSide("none"); setResetKey((prev) => prev + 1); }}
 						/>
 					</div>
@@ -128,7 +125,7 @@ function Runner() {
 		<div style={{ display: "flex", flexDirection: "column", minHeight: "100vh", padding: "2rem"}}>
 			{/* stage indicator */}
 			<h3 style={{ textAlign: "center", color: "#666"}}>
-				当前环节 {currIndex + 1} / {STAGES.length} : {currStage.title}
+				当前环节 {currIndex + 1} / {stages.length} : {currStage.title}
 			</h3>
 
 			{/* render current stage */}

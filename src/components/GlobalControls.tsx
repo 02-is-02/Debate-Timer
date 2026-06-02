@@ -1,5 +1,3 @@
-import React from "react";
-
 interface GlobalControlProps {
 	activeSide: "left" | "right" | "none";
 	onSwitch: () => void;
