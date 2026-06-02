@@ -2,7 +2,6 @@ import { useState } from "react";
 import Timer from "../components/Timer";
 import GlobalControls from "../components/GlobalControls";
 import { DebateStage } from "../types";
-import "./App.css";
 
 interface RunnerProps {
 	stages: DebateStage[];

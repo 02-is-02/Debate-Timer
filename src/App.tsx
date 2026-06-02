@@ -5,7 +5,7 @@ import Editor from "./pages/Editor";
 import Runner from "./pages/Runner";
 import Settings from "./pages/Settings";
 import { DebateStage } from "./types";
-import "../App.css";
+import "./App.css";
 
 const DEFAULT_STAGES: DebateStage[] = [
 		{ id: "1", type: "single", title: "正方一辩立论", timeLimit: 180 },
@@ -16,9 +16,10 @@ const DEFAULT_STAGES: DebateStage[] = [
 
 function App() {
 	const [stages, setStages] = useState<DebateStage[]>(DEFAULT_STAGES);
+
 	return (
 		<MemoryRouter>
-			<Route>
+			<Routes>
 				<Route path="/" element={<Home />} />
 				<Route path="/editor" element={
 					<Editor stages={stages} setStages={setStages} />
@@ -27,7 +28,7 @@ function App() {
 					<Runner stages={stages} />
 				} />
 				<Route path="/settings" element={<Settings />} />
-			</Route>
+			</Routes>
 		</MemoryRouter>
 	)
 }

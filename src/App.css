@@ -26,3 +26,12 @@
   font-size: 1.2rem;
   border-color: #333;
 }
+
+.drag-handle {
+  cursor: grab;
+  touch-action: none;
+}
+
+.drag-handle:active {
+  cursor: grabbing !important;
+}
