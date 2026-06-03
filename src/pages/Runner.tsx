@@ -116,7 +116,68 @@ function Runner({stages}: RunnerProps) {
 	if (!isPlaying) {
 		return (
 			// Config Page Or EDITOR
-			<div></div>
+			<div className="runner-wrapper">
+				<div className="runner-config-container">
+					{/* left */}
+					<div className="runner-config-left">
+						<h3 style={{ margin: "0 0 1.5rem 0", fontSize: "1.2rem", fontWeight: "600", letterSpacing: "1px" }}>
+							赛制流程预览
+						</h3>
+						<div style={{ display: "flex", flexDirection: "column", gap: "12px" }}>
+							{stages.map((stage, idx) => (
+								<div key={stage.id} style={{
+									padding: "12px 16px",
+									background: "rgba(255,255,255,0.05)", 
+									borderRadius: "8px",
+									borderLeft: "4px solid #60a5fa"
+								}}>
+									<div style={{ fontSize: "1.1rem", fontWeight: "500" }}>
+										{idx + 1}. {stage.title}
+									</div>
+									<div style={{ fontSize: "0.85rem", color: "rgba(255,255,255,0.7)", marginTop: "4px" }}>
+										{stage.type === 'single' && `${stage.timeLimit}秒`}
+										{stage.type === 'double' && `正方 ${stage.leftTimeLimit}s  |  反方 ${stage.rightTimeLimit}s`}
+										{stage.type === 'free' && (
+											<>
+												自由辩论 <br />
+												正方 {stage.leftTimeLimit}s  |  反方 {stage.rightTimeLimit}s
+											</>
+										)}
+									</div>
+								</div>
+							))}
+						</div>
+					</div>
+
+					{/* right */}
+					<div className="runner-config-right">
+						<h2 style={{ fontSize: "2rem", margin: "0 0 1rem 0" }}>控制台</h2>
+						
+						<div style={{ display: "flex", flexDirection: "column", gap: "8px" }}>
+							<label style={{ fontSize: "0.9rem", color: "rgba(255,255,255,0.8)" }}>辩题</label>
+							<input className="glass-input" placeholder="例如：人工智能是否会取代人类" />
+						</div>
+
+						<div style={{ display: "flex", gap: "20px", marginTop: "1rem" }}>
+							<div style={{ flex: 1, display: "flex", flexDirection: "column", gap: "8px", minWidth: "0" }}>
+								<label style={{ fontSize: "0.9rem", color: "#60a5fa" }}>正方队伍</label>
+								<input className="glass-input" placeholder="输入正方队名" />
+							</div>
+							<div style={{ flex: 1, display: "flex", flexDirection: "column", gap: "8px", minWidth: "0" }}>
+								<label style={{ fontSize: "0.9rem", color: "#f87171" }}>反方队伍</label>
+								<input className="glass-input" placeholder="输入反方队名" />
+							</div>
+						</div>
+
+						<button 
+							className="btn-start-match" 
+							onClick={() => setIsPlaying(true)}
+						>
+							启动比赛
+						</button>
+					</div>
+				</div>
+			</div>
 		);
 	}
 

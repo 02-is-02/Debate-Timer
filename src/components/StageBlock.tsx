@@ -48,7 +48,7 @@ export default function StageBlock({
 					className="stage-content-inner"
 					onPointerDown={(e) => e.stopPropagation()}
 					onMouseDown={(e) => e.stopPropagation()}
-					onClick={(e) => e.stopPropagation()}>
+					onClick={(e) => e.stopPropagation}>
 					<div className="stage-content-body">
 						{/* view mode */}
 						{!isEditing && (
@@ -57,8 +57,8 @@ export default function StageBlock({
 									<span style={{ color: "#94a3b8" }}>时长与规则配置</span>
 									<span>
 										{stage.type === "single" && `${stage.timeLimit} 秒`}
-                                        {stage.type !== "single" && stage.type !== "none" && `${stage.leftTimeLimit}s / ${stage.rightTimeLimit}s`}
-                                        {stage.type === "none" && `无计时`}
+										{stage.type !== "single" && stage.type !== "none" && `${stage.leftTimeLimit}s / ${stage.rightTimeLimit}s`}
+										{stage.type === "none" && `无计时`}
 									</span>
 								</div>
 								<div className="action-row">

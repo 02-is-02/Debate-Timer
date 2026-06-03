@@ -24,7 +24,7 @@ function App() {
 				<Route path="/editor" element={
 					<Editor stages={stages} setStages={setStages} />
 				} />
-				<Route path="/runnner" element={
+				<Route path="/runner" element={
 					<Runner stages={stages} />
 				} />
 				<Route path="/settings" element={<Settings />} />
