@@ -1,8 +1,10 @@
 import { useNavigate } from "react-router-dom";
 import { DebateStage, StageType } from "../types";
 import StageBlock from "../components/StageBlock";
+import Sidebar from "../components/Sidebar";
 import { DndContext, closestCenter, DragEndEvent, useSensor, useSensors, PointerSensor } from "@dnd-kit/core";
 import { arrayMove, SortableContext, verticalListSortingStrategy } from "@dnd-kit/sortable";
+import { useState } from "react";
 
 interface EditorProps {
 	stages: DebateStage[];
@@ -11,6 +13,7 @@ interface EditorProps {
 
 export default function Editor({ stages, setStages}: EditorProps) {
 	const navigate = useNavigate();
+	const [isFolded, setIsFolded] = useState(false);
 
 	const sensors = useSensors(
 		useSensor(PointerSensor, {
@@ -56,38 +59,41 @@ export default function Editor({ stages, setStages}: EditorProps) {
 	const itemIds = stages.map(stage => stage.id);
 
 	return (
-		<div style={{ padding: "2rem", maxWidth: "800px", margin: "0 auto" }}>
-			<div style={{ display: "flex", justifyContent: "space-between", alignItems: "center", marginBottom: "2rem" }}>
-			<h2>🛠️ 赛制编辑器</h2>
-			<div>
-				<button className="btn" onClick={() => navigate("/")} style={{ marginRight: "1rem" }}>返回</button>
-				<button className="btn" onClick={handleSave} style={{ backgroundColor: "#2ecc71", color: "white", borderColor: "#27ae60" }}>保存配置</button>
-			</div>
-			</div>
+		<div className="main-container">
+			<Sidebar isFolded={isFolded} toggleFold={() => setIsFolded(!isFolded)} activeRow={2}/>
+			<div style={{ padding: "2rem", maxWidth: "800px", margin: "0 auto" }}>
+				<div style={{ display: "flex", justifyContent: "space-between", alignItems: "center", marginBottom: "2rem" }}>
+				<h2>🛠️ 赛制编辑器</h2>
+				<div>
+					<button className="btn" onClick={() => navigate("/")} style={{ marginRight: "1rem" }}>返回</button>
+					<button className="btn" onClick={handleSave} style={{ backgroundColor: "#2ecc71", color: "white", borderColor: "#27ae60" }}>保存配置</button>
+				</div>
+				</div>
 
-			<DndContext sensors={sensors} collisionDetection={closestCenter} onDragEnd={handleDragEnd}>
-				<SortableContext items={itemIds} strategy={verticalListSortingStrategy}>
-					<div style={{ display: "flex", flexDirection: "column", gap: "1rem" }}>
-					{stages.map((stage, index) => (
-						<StageBlock
-						key={stage.id}
-						stage={stage}
-						index={index}
-						onUpdate={handleUpdateStage}
-						onDelete={handleDelete}
-						/>
-					))}
+				<DndContext sensors={sensors} collisionDetection={closestCenter} onDragEnd={handleDragEnd}>
+					<SortableContext items={itemIds} strategy={verticalListSortingStrategy}>
+						<div style={{ display: "flex", flexDirection: "column", gap: "1rem" }}>
+						{stages.map((stage, index) => (
+							<StageBlock
+							key={stage.id}
+							stage={stage}
+							index={index}
+							onUpdate={handleUpdateStage}
+							onDelete={handleDelete}
+							/>
+						))}
+						</div>
+					</SortableContext>
+				</DndContext>
+
+				<div style={{ marginTop: "2rem", padding: "1.5rem", border: "2px dashed #ccc", borderRadius: "8px", textAlign: "center" }}>
+					<h4 style={{ margin: "0 0 1rem 0", color: "#666" }}>➕ 添加新环节</h4>
+					<div style={{ display: "flex", gap: "1rem", justifyContent: "center" }}>
+						<button className="btn" onClick={() => handleAddStage("single")}>+ 单计时</button>
+						<button className="btn" onClick={() => handleAddStage("double")}>+ 双计时</button>
+						<button className="btn" onClick={() => handleAddStage("free")}>+ 自由辩</button>
+						<button className="btn" onClick={() => handleAddStage("none")}>+ 无计时</button>
 					</div>
-				</SortableContext>
-			</DndContext>
-
-			<div style={{ marginTop: "2rem", padding: "1.5rem", border: "2px dashed #ccc", borderRadius: "8px", textAlign: "center" }}>
-				<h4 style={{ margin: "0 0 1rem 0", color: "#666" }}>➕ 添加新环节</h4>
-				<div style={{ display: "flex", gap: "1rem", justifyContent: "center" }}>
-					<button className="btn" onClick={() => handleAddStage("single")}>+ 单计时</button>
-					<button className="btn" onClick={() => handleAddStage("double")}>+ 双计时</button>
-					<button className="btn" onClick={() => handleAddStage("free")}>+ 自由辩</button>
-					<button className="btn" onClick={() => handleAddStage("none")}>+ 无计时</button>
 				</div>
 			</div>
 		</div>

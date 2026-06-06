@@ -1,6 +1,6 @@
 import { useState } from "react";
 import { MemoryRouter, Routes, Route } from "react-router-dom";
-import Home from "./pages/Home";
+import HomePage from "./pages/Home";
 import Editor from "./pages/Editor";
 import Runner from "./pages/Runner";
 import Settings from "./pages/Settings";
@@ -20,7 +20,7 @@ function App() {
 	return (
 		<MemoryRouter>
 			<Routes>
-				<Route path="/" element={<Home />} />
+				<Route path="/" element={<HomePage />} />
 				<Route path="/editor" element={
 					<Editor stages={stages} setStages={setStages} />
 				} />
