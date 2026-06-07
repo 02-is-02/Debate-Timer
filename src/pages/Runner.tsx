@@ -1,6 +1,5 @@
-import { useState } from "react";
+import { useState, useEffect } from "react";
 import Timer from "../components/Timer";
-import GlobalControls from "../components/GlobalControls";
 import Sidebar from "../components/Sidebar";
 import { DebateStage } from "../types";
 
@@ -18,6 +17,7 @@ function Runner({stages}: RunnerProps) {
 	const currStage = stages[currIndex];
 	const isFirstPage = currIndex === 0;
 	const isLastPage = currIndex === stages.length - 1;
+	const bText = activeSide === 'none' ? "开始环节" : "切换发言";
 
 	const handleNext = () => {
 		if (!isLastPage) setCurrIndex((prev) => prev + 1);
@@ -35,6 +35,74 @@ function Runner({stages}: RunnerProps) {
 		setIsPlaying(false);
 		setCurrIndex(0);
 	}
+
+	useEffect(() => {
+		const handleKeyDown  = (e: KeyboardEvent) => {
+			if (e.repeat) return;
+
+			if (e.ctrlKey || e.altKey || e.metaKey) return;
+
+			const target = e.target as HTMLElement;
+			if (
+				target.tagName === "INPUT" || 
+				target.tagName === "TEXTAREA" ||
+				target.tagName === "SELECT" ||
+				target.isContentEditable
+			) {
+				return;
+			}
+
+			switch (e.key) {
+				case 'ArrowLeft':
+					if (!isFirstPage) handlePrev();
+					break;
+				case 'ArrowRight':
+					if (!isLastPage) handleNext();
+					break;
+				case 'Escape':
+					handleExit();
+					break;
+				case ' ':
+					e.preventDefault();
+					switch (currStage.type) {
+						case 'free':
+							setActiveSide(activeSide === "none" ? (currStage.start || "left") : (activeSide === "left" ? "right" : "left"));
+							break;
+						case 'double':
+							setActiveSide(activeSide === "none" ?  "left" : (activeSide === "left" ? "right" : "left"));
+							break;
+						case 'single':
+							setActiveSide(activeSide === 'none' ? 'left' : 'none');
+							break;
+						case 'none':
+							break;
+					}
+					break;
+				case ',':
+				case '<':
+					setActiveSide('left');
+					break;
+				case '.':
+				case '>':
+					setActiveSide('right');
+					break;
+			}
+
+			
+		};
+		window.addEventListener('keydown', handleKeyDown);
+
+		return () => {
+			window.removeEventListener('keydown', handleKeyDown);
+		};
+	}, [handlePrev, 
+		handleNext, 
+		handleExit, 
+		setActiveSide, 
+		isFirstPage, 
+		isLastPage,
+		currStage,
+		activeSide]);
 
 	const renderCurrStage = () => {
 		if (!currStage) return null;
@@ -96,11 +164,6 @@ function Runner({stages}: RunnerProps) {
 							onPause={() => setActiveSide("none")}
 						/>
 						</div>
-						<GlobalControls 
-						activeSide={activeSide} 
-						onSwitch={() => setActiveSide(activeSide === "none" ? (currStage.start || "left") : (activeSide === "left" ? "right" : "left"))} 
-						onGlobalReset={() => { setActiveSide("none"); setResetKey((prev) => prev + 1); }}
-						/>
 					</div>
 				);
 			case "none":
@@ -202,16 +265,41 @@ function Runner({stages}: RunnerProps) {
 				</div>
 
 				{/* bottom nav bar */}
-				<div style={{display: "flex", justifyContent: "space-between", marginTop: "2rem", paddingTop: "1rem"}}>
-					<button className="btn" onClick={handlePrev} disabled={isFirstPage}>
-						⏮ 上一环节
-					</button>
-					<button className="btn" onClick={handleExit}>
-						退出比赛
-					</button>
-					<button className="btn" onClick={handleNext} disabled={isLastPage}>
-						下一环节 ⏭
-					</button>
+				<div style={{
+					display: "flex", 
+					justifyContent: "space-between", 
+					alignItems: "center",
+					marginTop: "2rem", 
+					paddingTop: "1rem"}}>
+					<div style={{flex: 1, display: "flex", justifyContent: "left", gap: "1rem"}}>
+						<button className="btn" onClick={handlePrev} disabled={isFirstPage}>
+							⏮ 上一环节
+						</button>
+					</div>
+					<div style={{flex: 3, display: "flex", justifyContent: "center", gap: "1rem"}}>
+						{currStage.type === 'free' && (
+							<button className="btn" onClick={() => setActiveSide(activeSide === "none" ? (currStage.start || "left") : (activeSide === "left" ? "right" : "left"))}>
+								{bText}
+							</button>
+						)}
+						
+						<button className="btn" onClick={handleExit}>
+							退出比赛
+						</button>
+
+						{currStage.type === 'free' && (
+							<button className="btn" onClick={() => { setActiveSide("none"); setResetKey((prev) => prev + 1); }}>
+								全局重置
+							</button>
+						)}
+					</div>
+					<div style={{flex: 1, display: "flex", justifyContent: "right", gap: "1rem"}}>
+						<button className="btn" onClick={handleNext} disabled={isLastPage}>
+							下一环节 ⏭
+						</button>
+					</div>
+					
+					
 				</div>
 			</div>
 		</div>

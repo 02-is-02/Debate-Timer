@@ -11,12 +11,12 @@ export default function GlobalControls({ activeSide, onSwitch, onGlobalReset}: G
 	return (
 		<div style={{display: "flex", gap: "1rem", justifyContent: "center", marginTop: "2rem"}}>
 			<button
-				className="btn btn-large"
+				className="btn"
 				onClick={onSwitch}>
 				{bText}
 			</button>
 			<button
-				className="btn btn-large"
+				className="btn"
 				onClick={onGlobalReset}>
 				全局重置
 			</button>
