@@ -190,7 +190,7 @@ function Runner({stages}: RunnerProps) {
 						{/* left */}
 						<div className="runner-config-left">
 							<h3 style={{ margin: "0 0 1.5rem 0", fontSize: "1.2rem", fontWeight: "600", letterSpacing: "1px" }}>
-								赛制流程预览
+								赛制选择
 							</h3>
 							<div style={{ display: "flex", flexDirection: "column", gap: "12px" }}>
 								{stages.map((stage, idx) => (
@@ -298,8 +298,6 @@ function Runner({stages}: RunnerProps) {
 							下一环节 ⏭
 						</button>
 					</div>
-					
-					
 				</div>
 			</div>
 		</div>

@@ -1,17 +1,10 @@
 import { useRef, useEffect, useMemo } from "react";
 import { Canvas, useFrame, useThree } from "@react-three/fiber";
 import { Text } from "@react-three/drei";
+import rawWordsData from '../assets/words.json'
 import * as THREE from 'three';
 
-// 🌟 1. 严格按照字数 (2-7) 分组的矩阵词库
-const WORDS_DB: Record<number, string[]> = {
-	2: ["立论", "结辩", "辩题", "驳论", "攻辩", "质询", "数据", "逻辑"],
-	3: ["时间到", "一辩稿", "二辩稿", "三辩稿", "防守方", "进攻方", "突破口"],
-	4: ["正方一辩", "反方质询", "核心论点", "逻辑谬误", "评委打分", "总结陈词", "盘问环节", "超时警告"],
-	5: ["偷换概念者", "滑坡谬误点", "数据存疑处", "事实核查中", "请勿打断我", "论点不成立"],
-	6: ["对方辩友注意", "逻辑闭环形成", "核心点被击破", "请正面来回答", "时间剩三十秒"],
-	7: ["请不要逃避这问题", "我方论点已得证", "对方数据有漏洞", "请尊重比赛时间", "以上是我方总结"]
-};
+const WORDS_DB: Record<number, string[]> = rawWordsData;
 
 const OrganicMatrixField = () => {
 	const { camera, viewport } = useThree();

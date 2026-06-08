@@ -1,6 +1,4 @@
 import {useState} from "react";
-import { Menu, Home, FileEdit, Play, Settings } from "lucide-react";
-import { Link } from "react-router-dom";
 import InteractiveTextBackground from "../components/InteractiveTextField";
 import Sidebar from "../components/Sidebar";
  
