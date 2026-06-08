@@ -40,7 +40,6 @@
           "path": "$DOCUMENT/**"
         }
       ]
-    },
-    "dialog:default"
+    }
   ]
 }
