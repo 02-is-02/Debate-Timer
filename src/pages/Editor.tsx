@@ -11,7 +11,7 @@ interface EditorProps {
 	setStages: (stages: DebateStage[]) => void;
 }
 
-export default function Editor({ stages, setStages}: EditorProps) {
+export default function Editor({ stages, setStages }: EditorProps) {
 	const navigate = useNavigate();
 	const [isFolded, setIsFolded] = useState(false);
 
@@ -61,13 +61,12 @@ export default function Editor({ stages, setStages}: EditorProps) {
 	return (
 		<div className="main-container">
 			<Sidebar isFolded={isFolded} toggleFold={() => setIsFolded(!isFolded)} activeRow={2}/>
-			<div style={{ padding: "2rem", maxWidth: "800px", margin: "0 auto" }}>
+			<div style={{ padding: "2rem", maxWidth: "800px", margin: "0 auto", overflowY: "auto" }}>
 				<div style={{ display: "flex", justifyContent: "space-between", alignItems: "center", marginBottom: "2rem" }}>
-				<h2>🛠️ 赛制编辑器</h2>
-				<div>
-					<button className="btn" onClick={() => navigate("/")} style={{ marginRight: "1rem" }}>返回</button>
-					<button className="btn" onClick={handleSave} style={{ backgroundColor: "#2ecc71", color: "white", borderColor: "#27ae60" }}>保存配置</button>
-				</div>
+					<h2>赛制编辑器</h2>
+					<div>
+						<button className="btn" onClick={handleSave} style={{ backgroundColor: "#2ecc71", color: "white", borderColor: "#27ae60" }}>保存配置</button>
+					</div>
 				</div>
 
 				<DndContext sensors={sensors} collisionDetection={closestCenter} onDragEnd={handleDragEnd}>
