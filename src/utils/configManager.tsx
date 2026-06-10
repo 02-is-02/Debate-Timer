@@ -1,9 +1,20 @@
 import { writeTextFile, readTextFile, exists } from "@tauri-apps/plugin-fs";
 import { save, open as openDialog } from "@tauri-apps/plugin-dialog";
 import { join } from "@tauri-apps/api/path";
+import { invoke } from "@tauri-apps/api/core";
 
 const CONFIG_FILE_NAME = 'user-match-config.json';
 const PATH_STORAGE_KEY = 'debate_timer_save_dir';
+
+async function askRustToAllowPath(path: string) {
+	try {
+		await invoke("allow_custom_path", { path });
+		console.log("React: Rust dynamic scope done")
+	} catch (error) {
+		console.error("React: dynnamic scope assignmennt failed: ", error);
+		alert(`动态授权发生错误，请将此弹窗截图发送给维护人员:\n${error}`)
+	}
+}
 
 export async function loadConfigFromDisk() {
 	try {
@@ -41,6 +52,9 @@ export async function saveConfigToDisk(newConfig: any) {
 			}
 
 			saveDirPath = selectedPath as string;
+
+			await askRustToAllowPath(saveDirPath)
+
 			localStorage.setItem(PATH_STORAGE_KEY, saveDirPath);
 		}
 
@@ -115,4 +129,12 @@ export async function exportConfig(configData: any) {
 export async function resetSaveLocation() {
 	localStorage.removeItem(PATH_STORAGE_KEY);
 	alert("已清除默认存储位置。下次保存将重新询问！");
+}
+
+export async function initAppScope() {
+    const savedDirPath = localStorage.getItem(PATH_STORAGE_KEY);
+    if (savedDirPath) {
+        console.log("检测到历史存储路径，正在自动重新向 Rust 申请 Scope 授权...");
+        await askRustToAllowPath(savedDirPath);
+    }
 }

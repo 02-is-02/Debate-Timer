@@ -6,8 +6,8 @@ import { CSS } from "@dnd-kit/utilities";
 interface StageBlockProps {
 	stage: DebateStage;
 	index: number;
-	onUpdate: (id: string, updates: Partial<DebateStage>) => void;
-	onDelete: (id: string) => void;
+	onUpdate: (id: number, updates: Partial<DebateStage>) => void;
+	onDelete: (id: number) => void;
 }
 
 export default function StageBlock({

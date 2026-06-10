@@ -1,25 +1,16 @@
-import {useState} from "react";
 import InteractiveTextBackground from "../components/InteractiveTextField";
-import Sidebar from "../components/Sidebar";
  
 export default function HomePage() {
-	const [isFolded, setIsFolded] = useState(false);
-
 	return (
-		<div className="main-container">
-			
+		<div className="container">
 			<InteractiveTextBackground />
-
-			{/* sidebar */}
-			<Sidebar isFolded={isFolded} toggleFold={() => setIsFolded(!isFolded)} activeRow={1}/>
-
 			<div style={{ flex: 1, overflow: "hidden", zIndex: 1, alignContent: "center" }}>
 				<div style={{
 					position: "absolute", 
-					left: `calc(50% + ${isFolded ? '40px' : '120px'})`, 
+					left: "calc(50%)", 
+					top: "calc(50%)",
 					transform: "translateX(-50%) translateY(-50%)",
 					transition: "left 0.3s cubic-bezier(0.4, 0, 0.2, 1)",
-					top: "50%",
 					display: "flex",
 					flexDirection: "column"
 				}}>

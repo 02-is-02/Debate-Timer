@@ -1,10 +1,10 @@
-import { useNavigate } from "react-router-dom";
-import { DebateStage, StageType } from "../types";
+import { DebateStages, DebateStage, StageType } from "../types";
+import * as configManager from "../utils/configManager";
 import StageBlock from "../components/StageBlock";
-import Sidebar from "../components/Sidebar";
+import { MatchSidebar } from "../components/Sidebar";
 import { DndContext, closestCenter, DragEndEvent, useSensor, useSensors, PointerSensor } from "@dnd-kit/core";
 import { arrayMove, SortableContext, verticalListSortingStrategy } from "@dnd-kit/sortable";
-import { useState } from "react";
+import { useState, useEffect } from "react";
 
 interface EditorProps {
 	stages: DebateStage[];
@@ -12,8 +12,27 @@ interface EditorProps {
 }
 
 export default function Editor({ stages, setStages }: EditorProps) {
-	const navigate = useNavigate();
-	const [isFolded, setIsFolded] = useState(false);
+	const [isMatchesFolded, setIsMatchesFolded] = useState(false);
+	const [editingItem, setEditingItem] = useState<DebateStages | null>(null);
+	const [id, setId] = useState("");
+	const [matches, setMatches] = useState<any[]>([]);
+
+	useEffect(() => {
+		async function loadData() {
+			try {
+				await configManager.initAppScope();
+				const loadedFile = await configManager.loadConfigFromDisk();
+				if (Array.isArray(loadedFile)) {
+					setMatches(loadedFile);
+				}
+			} catch (error) {
+				console.error("Failed to load matches:", error);
+				alert(alert(`赛制加载发生错误，请将此弹窗截图发送给维护人员:\n${error}`))
+			}
+		}
+
+		loadData();
+	}, [])
 
 	const sensors = useSensors(
 		useSensor(PointerSensor, {
@@ -24,7 +43,7 @@ export default function Editor({ stages, setStages }: EditorProps) {
 	);
 
 	const handleAddStage = (type: StageType) => {
-		const newId = Date.now().toString(36) + Math.random().toString(36).substring(2);
+		const newId = stages.length;
 		let newStage: DebateStage;
 		if (type === "single") newStage = { id: newId, type: "single", title: "新单计时", timeLimit: 180 };
 		else if (type === "double") newStage = { id: newId, type: type, title: "新双计时", leftTimeLimit: 240, rightTimeLimit: 240 };
@@ -33,12 +52,12 @@ export default function Editor({ stages, setStages }: EditorProps) {
 		setStages([...stages, newStage]);
 	};
 
-	const handleUpdateStage = (id: string, updates: Partial<DebateStage>) => {
+	const handleUpdateStage = (id: number, updates: Partial<DebateStage>) => {
 		setStages(stages.map(stage => stage.id === id ? { ...stage, ...updates } as DebateStage : stage));
 	};
 
-	const handleDelete = (id: string) => {
-	setStages(stages.filter(stage => stage.id !== id));
+	const handleDelete = (id: number) => {
+		setStages(stages.filter(stage => stage.id !== id));
 	};
 
 	const handleDragEnd = (event: DragEndEvent) => {
@@ -50,51 +69,22 @@ export default function Editor({ stages, setStages }: EditorProps) {
 		}
 	};
 
+	const handleNewMatch = () => {
+		setId(Date.now().toString(36) + Math.random().toString(36).substring(2));
+	}
+
 	const handleSave = () => {
-		console.log("保存的赛制：", stages);
-		alert("保存成功！");
-		navigate("/");
+		let newMatch: DebateStages
+		newMatch = { id: id, name: "TEMP", stages: stages }
+		configManager.saveConfigToDisk(newMatch);
 	};
 
 	const itemIds = stages.map(stage => stage.id);
 
 	return (
-		<div className="main-container">
-			<Sidebar isFolded={isFolded} toggleFold={() => setIsFolded(!isFolded)} activeRow={2}/>
-			<div style={{ padding: "2rem", maxWidth: "800px", margin: "0 auto", overflowY: "auto" }}>
-				<div style={{ display: "flex", justifyContent: "space-between", alignItems: "center", marginBottom: "2rem" }}>
-					<h2>赛制编辑器</h2>
-					<div>
-						<button className="btn" onClick={handleSave} style={{ backgroundColor: "#2ecc71", color: "white", borderColor: "#27ae60" }}>保存配置</button>
-					</div>
-				</div>
+		<div className="container">
+			<MatchSidebar isFolded={isMatchesFolded} matches={matches} toggleFold={() => setIsMatchesFolded(!isMatchesFolded)} onSelect={(item) => setEditingItem(item)} />
 
-				<DndContext sensors={sensors} collisionDetection={closestCenter} onDragEnd={handleDragEnd}>
-					<SortableContext items={itemIds} strategy={verticalListSortingStrategy}>
-						<div style={{ display: "flex", flexDirection: "column", gap: "1rem" }}>
-						{stages.map((stage, index) => (
-							<StageBlock
-							key={stage.id}
-							stage={stage}
-							index={index}
-							onUpdate={handleUpdateStage}
-							onDelete={handleDelete}
-							/>
-						))}
-						</div>
-					</SortableContext>
-				</DndContext>
-
-				<div style={{ marginTop: "2rem", padding: "1.5rem", border: "2px dashed #ccc", borderRadius: "8px", textAlign: "center" }}>
-					<h4 style={{ margin: "0 0 1rem 0", color: "#666" }}>➕ 添加新环节</h4>
-					<div style={{ display: "flex", gap: "1rem", justifyContent: "center" }}>
-						<button className="btn" onClick={() => handleAddStage("single")}>+ 单计时</button>
-						<button className="btn" onClick={() => handleAddStage("double")}>+ 双计时</button>
-						<button className="btn" onClick={() => handleAddStage("free")}>+ 自由辩</button>
-						<button className="btn" onClick={() => handleAddStage("none")}>+ 无计时</button>
-					</div>
-				</div>
-			</div>
 		</div>
 	);
 }

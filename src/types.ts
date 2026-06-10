@@ -1,7 +1,7 @@
 export type StageType = "single" | "double" | "free" | "none";
 
 interface BaseStage {
-	id: string;
+	id: number;
 	title: string;
 }
 
@@ -28,3 +28,9 @@ export interface NoneStage extends BaseStage {
 }
 
 export type DebateStage = SingleStage | DoubleStage | FreeStage | NoneStage;
+
+export interface DebateStages {
+	id: string;
+	name: string
+	stages: DebateStage[];
+}

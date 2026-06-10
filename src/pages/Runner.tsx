@@ -1,6 +1,5 @@
 import { useState, useEffect } from "react";
 import Timer from "../components/Timer";
-import Sidebar from "../components/Sidebar";
 import { DebateStage } from "../types";
 
 interface RunnerProps {
@@ -8,7 +7,6 @@ interface RunnerProps {
 }
 
 function Runner({stages}: RunnerProps) {
-	const [isFolded, setIsFolded] = useState(false);
 	const [isPlaying, setIsPlaying] = useState(false);
 	const [currIndex, setCurrIndex] = useState(0);
 	const [activeSide, setActiveSide] = useState<"left" | "right" | "none">("none");
@@ -180,10 +178,8 @@ function Runner({stages}: RunnerProps) {
 
 	if (!isPlaying) {
 		return (
-			<div className="main-container">
+			<div className="container">
 				{/* Config Page Or EDITOR */}
-				{/* sidebar */}
-				<Sidebar isFolded={isFolded} toggleFold={() => setIsFolded(!isFolded)} activeRow={3}/>
 
 				<div className="runner-wrapper">
 					<div className="runner-config-container">
@@ -252,7 +248,7 @@ function Runner({stages}: RunnerProps) {
 	}
 
 	return (
-		<div className="main-container">
+		<div className="container">
 			<div style={{ display: "flex", flexDirection: "column", minHeight: "100vh", width: "100%", padding: "1rem", boxSizing: "border-box" }}>
 				{/* stage indicator */}
 				<h3 style={{ textAlign: "center", color: "#666"}}>

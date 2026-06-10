@@ -9,6 +9,11 @@
     "core:default",
     "opener:default",
     "fs:default",
+	"dialog:default",
+	"dialog:allow-ask",
+	"dialog:allow-confirm",
+	"dialog:allow-open",
+	"dialog:allow-message",
     {
       "identifier": "fs:allow-read-text-file",
       "allow": [
