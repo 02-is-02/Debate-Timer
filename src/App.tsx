@@ -23,7 +23,7 @@ function App() {
 			<Routes>
 				<Route element={<Layout />}>
 					<Route path="/" element={<HomePage />} />
-					<Route path="/editor" element={<Editor stages={stages} setStages={setStages}/>} />
+					<Route path="/editor" element={<Editor />} />
 					<Route path="/runner" element={<Runner stages={stages} />} />
 					<Route path="/settings" element={<Settings />} />
 				</Route>

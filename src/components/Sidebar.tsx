@@ -36,35 +36,40 @@ export default function MenuSidebar( {isFolded, toggleFold, activeRow}: menuProp
 }
 
 export function MatchSidebar( {isFolded, matches, toggleFold, onSelect}: matchesProps ) {
-	const foldSign = getFoldSign(isFolded);
 
 	return (
-		<div className={`sidebar ${isFolded ? "folded" : ""}` }>
-			<div className="sidebar-header" >
-					<button className="btn" onClick={toggleFold}>{foldSign}</button>
+		<div style={{ overflowY: "auto" }} className={`sidebar match ${isFolded ? "folded" : ""}` }>
+			<div style={{ 
+				display: "flex",
+				flexDirection: "row",
+				justifyContent: "space-between",
+				alignContent: "center"
+			}}
+			className="sidebar-header" >
+				<label style={{ 
+					width: "70%",
+					display: "block",
+					fontSize: "1.3rem", 
+					fontWeight: "bold",
+					// borderBottom: "1px solid #02255e" 
+				}}>
+					过往赛制
+				</label>
+				<button className="btn">+</button>
 			</div>
 
-			<div style={ isFolded ? { opacity: "0" } : { opacity: "100" } } className="sidebar-content">
+			<div className={`sidebar-content match-inner ${isFolded ? "folded" : ""}` }>
 				{/* options */}
 				<ul>
 					{matches.map((match) => (
 						<li 
 							key={match.id}
-							onClick={() => onSelect(match)}>
+							onClick={() => {onSelect(match); toggleFold();}}>
 							<span className={"link"}>{match.name || "未命名"}</span>
 						</li>
 					))}
 				</ul>
 			</div>
 		</div>
-	)
-}
-
-function getFoldSign ( isFolded: boolean ) {
-	if (isFolded) return (
-		<ChevronRight size={20} strokeWidth={2} />
-	)
-	return (
-		<ChevronLeft size={20} strokeWidth={2} />
 	)
 }
