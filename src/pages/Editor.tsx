@@ -15,8 +15,7 @@ export default function Editor() {
 	const handleUpdateStage = (stages: DebateStages) => {
 		setIsSaving(true);
 		setEditingItem(stages);
-		matches.find((m) => m.id === editingItem?.id).name = stages.name
-		// setMatches()
+		matches.find((m) => m.id === editingItem?.id).name = stages.name;
 
 		if (typingTimeRef.current) {
 			clearTimeout(typingTimeRef.current);
@@ -28,9 +27,13 @@ export default function Editor() {
 		}, 1500);
 	};
 
-	// const handleAddMatch = () => {
-	// 	const newMatch = DebateStages
-	// }
+	const handleAddMatch = () => {
+		const newId = `M-${Date.now}`;
+		const newMatch: DebateStages = { id: newId, name: "未命名", stages: []};
+		const updatedMatches = matches.concat(newMatch);
+		setEditingItem(newMatch);
+		setMatches(updatedMatches);
+	}
 
 	useEffect(() => {
 		return () => {
@@ -65,6 +68,7 @@ export default function Editor() {
 					matches={matches} 
 					toggleFold={() => setIsMatchesFolded(!isMatchesFolded)} 
 					onSelect={(item) => setEditingItem(item)} 
+					onAdd={handleAddMatch}
 				/>
 			</div>
 

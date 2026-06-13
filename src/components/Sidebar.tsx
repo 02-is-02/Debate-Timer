@@ -1,4 +1,4 @@
-import { Menu, Home, FileEdit, Play, Settings, ChevronLeft, ChevronRight, FolderEdit } from "lucide-react";
+import { Menu, Home, FileEdit, Play, Settings, File } from "lucide-react";
 import { Link } from "react-router-dom";
 import { DebateStages } from "../types";
 
@@ -13,6 +13,7 @@ interface matchesProps {
 	matches: any[];
 	toggleFold: () => void;
 	onSelect: (item: DebateStages) => void;
+	onAdd: () => void;
 }
 
 export default function MenuSidebar( {isFolded, toggleFold, activeRow}: menuProps ) {
@@ -35,7 +36,7 @@ export default function MenuSidebar( {isFolded, toggleFold, activeRow}: menuProp
 		</div>)
 }
 
-export function MatchSidebar( {isFolded, matches, toggleFold, onSelect}: matchesProps ) {
+export function MatchSidebar( {isFolded, matches, toggleFold, onSelect, onAdd }: matchesProps ) {
 
 	return (
 		<div style={{ overflowY: "auto" }} className={`sidebar match ${isFolded ? "folded" : ""}` }>
@@ -51,11 +52,11 @@ export function MatchSidebar( {isFolded, matches, toggleFold, onSelect}: matches
 					display: "block",
 					fontSize: "1.3rem", 
 					fontWeight: "bold",
-					// borderBottom: "1px solid #02255e" 
+					// borderBottom: "1px solid rgb(2, 37, 94)" 
 				}}>
 					过往赛制
 				</label>
-				<button className="btn">+</button>
+				<button className="btn" onClick={onAdd}>+</button>
 			</div>
 
 			<div className={`sidebar-content match-inner ${isFolded ? "folded" : ""}` }>
@@ -65,7 +66,10 @@ export function MatchSidebar( {isFolded, matches, toggleFold, onSelect}: matches
 						<li 
 							key={match.id}
 							onClick={() => {onSelect(match); toggleFold();}}>
-							<span className={"link"}>{match.name || "未命名"}</span>
+							<span className={"link"}>
+								<File size={16} />
+								{match.name || "未命名"}
+							</span>
 						</li>
 					))}
 				</ul>

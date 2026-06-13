@@ -50,8 +50,8 @@ export default function( { isSaving, match, onBack, onSave }: EditPanelProps ) {
 		setDeletingId(null);
 	}
 
-	const handleInsertStage = (index: number) => {
-		const newId = Date.now();
+	const handleInsertStage = ( match: DebateStages, index: number) => {
+		const newId = match.stages.length;
 		const newStage: DebateStage = {
 			id: newId,
 			title: `新环节 ${editingPage.stages.length + 1}`,
@@ -103,7 +103,7 @@ export default function( { isSaving, match, onBack, onSave }: EditPanelProps ) {
 	}
 
 	const renderDivider = (index: number) => (
-		<div className="stage-divider" onClick={() => handleInsertStage(index)} title="在此插入新环节">
+		<div className="stage-divider" onClick={() => handleInsertStage(editingPage, index)} title="在此插入新环节">
 			<div className="stage-divider-line"></div>
 			<button className="stage-divider-btn">
 				<Plus size={14} strokeWidth={3} />
