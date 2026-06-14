@@ -161,7 +161,7 @@ const OrganicMatrixField = () => {
 				<Text
 					key={p.id}
 					ref={(r) => (p.ref = r)} 
-					color="#878c91"
+					color="#4d4f52"
 					fontSize={0.65}
 					anchorX="center"
 					anchorY="middle"
@@ -177,7 +177,7 @@ export default function InteractiveTextBackground() {
 	return (
 		<div style={{ position: 'absolute', top: 0, left: 0, width: '100%', height: '100%', zIndex: -1, pointerEvents: 'none' }}>
 			<Canvas camera={{ position: [0, 0, 45], fov: 35 }}>
-				<color attach="background" args={['#ffffff']} />
+				<color attach="background" args={['#252526']} />
 				<OrganicMatrixField />
 			</Canvas>
 		</div>

@@ -47,12 +47,25 @@ export default function Timer({
 			margin: "1rem"
 		}}>
 			{/* title */}
-			{title && <h2 style={{ margin: "0 0 1rem 0"}}>{title}</h2>}
+			{title && <h2 style={{ color: "white", margin: "0 0 1rem 0"}}>{title}</h2>}
 
 			{/* timer */}
-			<div style={{width: "100%", maxWidth: "300px", margin: "0 auto"}}>
+			<div style={{
+					width: "100%", 
+					maxWidth: "300px", 
+					margin: "0 auto"
+				}}
+			>
 				<svg viewBox="0 0 100 30" style={{width: "100%", height: "auto"}}>
-					<text x="50%" y="50%" dominantBaseline="middle" textAnchor="middle" fontSize={24} fontWeight="bold" fill={timeLeft <= 30 ? "red" : "currentColor"}>
+					<text 
+						x="50%" 
+						y="50%" 
+						dominantBaseline="middle" 
+						textAnchor="middle" 
+						fontSize={24} 
+						fontWeight="bold" 
+						fill={timeLeft <= 30 ? "red" : "white"}
+					>
 						{formatTime(timeLeft)}
 					</text>
 				</svg>

@@ -117,18 +117,18 @@ export default function( { isSaving, match, onBack, onSave }: EditPanelProps ) {
 			<div style={{ padding: "16px 4vw 0 4vw", display: "flex",flexDirection: "row", justifyContent: "space-between" }}>
 				<button 
 					className="btn" 
-					style={{ padding: "6px 12px", border: "none", display: "flex", alignItems: "center", gap: "4px", background: "transparent", color: "#64748b", cursor: "pointer" }} 
+					style={{ padding: "6px 12px", border: "none", display: "flex", alignItems: "center", gap: "4px", background: "transparent", color: "var(--alt-blue)", cursor: "pointer" }} 
 					onClick={onBack}
 				>
 					<ChevronLeft size={20} strokeWidth={2} />返回
 				</button>
 				<label
-					style={{ padding: "6px 12px", border: "none", background: "transparent", color: "#5352526f", fontSize: "0.8rem" }}>
+					style={{ padding: "6px 12px", border: "none", background: "transparent", color: "var(--alt-blue)", fontSize: "0.8rem" }}>
 					{isSaving ? "正在保存，请勿关闭页面" : "已保存"}
 				</label>
 			</div>
-			<div className="stage-container">
-				<input className="edit-title-input" value={ editingPage != null ? editingPage.name : "" } onChange={(e) => handleUpdateTitle(e.target.value)}></input>
+			<div className="stage-container hide-scrollbar">
+				<input name="title" className="edit-title-input" value={ editingPage != null ? editingPage.name : "" } onChange={(e) => handleUpdateTitle(e.target.value)}></input>
 				<DndContext sensors={sensors} collisionDetection={closestCenter} onDragEnd={handleDragEnd}>
 					<SortableContext items={editingPage.stages.map((s) => s.id)} strategy={verticalListSortingStrategy}>
 						{renderDivider(0)}
