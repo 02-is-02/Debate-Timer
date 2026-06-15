@@ -2,9 +2,17 @@ import { writeTextFile, readTextFile, exists } from "@tauri-apps/plugin-fs";
 import { save, open as openDialog } from "@tauri-apps/plugin-dialog";
 import { join } from "@tauri-apps/api/path";
 import { invoke } from "@tauri-apps/api/core";
+import { success } from "zod";
+import { emit, emitTo } from "@tauri-apps/api/event";
 
 const CONFIG_FILE_NAME = 'user-match-config.json';
 const PATH_STORAGE_KEY = 'debate_timer_save_dir';
+
+function emitToast( message: string, severity: 'success' | 'error' | 'warning' | 'info' ) {
+	window.dispatchEvent(new CustomEvent('trigger-global-toast', {
+		detail: {message, severity}
+	}));
+}
 
 async function askRustToAllowPath(path: string) {
 	try {
@@ -12,7 +20,7 @@ async function askRustToAllowPath(path: string) {
 		console.log("React: Rust dynamic scope done")
 	} catch (error) {
 		console.error("React: dynnamic scope assignmennt failed: ", error);
-		alert(`动态授权发生错误，请将此弹窗截图发送给维护人员:\n${error}`)
+		emitToast(`动态授权发生错误，请将此弹窗截图发送给维护人员:\n${error}`, 'error')
 	}
 }
 
@@ -31,7 +39,7 @@ export async function loadConfigFromDisk() {
 		return JSON.parse(jsonStr);
 	} catch (error) {
 		console.log("Failed to load config: ", error);
-		alert(`加载发生错误，请将此弹窗截图发送给维护人员: \n${error}`);
+		emitToast(`加载发生错误，请将此弹窗截图发送给维护人员: \n${error}`, 'error');
 	}
 }
 
@@ -80,7 +88,7 @@ export async function saveConfigToDisk(newConfig: any) {
 		await writeTextFile(fullFilePath, finalJsonStr);
 	} catch (error) {
 		console.log("Failed to save config: ", error);
-		alert(`保存发生错误，请将此弹窗截图发送给维护人员: \n${error}`);
+		emitToast(`保存发生错误，请将此弹窗截图发送给维护人员: \n${error}`, 'error');
 	}
 }
 
@@ -98,7 +106,7 @@ export async function deleteConfigFromDisk(targetId: string) {
 		await writeTextFile(fullFilePath, jsonStr);
 	} catch (error) {
 		console.log("Failed to delete config: ", error);
-		alert(`删除发生错误，请将此弹窗截图发送给维护人员: \n${error}`);
+		emitToast(`删除发生错误，请将此弹窗截图发送给维护人员: \n${error}`, 'error');
 	}
 }
 
@@ -106,7 +114,7 @@ export async function exportConfig(configData: any) {
 	try {
 		const filePath = await save({
 			title: '导出赛制配置',
-			defaultPath: '自定义赛制.json',
+			defaultPath: `${configData.name}.json`,
 			filters: [{
 				name: 'JSON 配置文件',
 				extensions: ['json']
@@ -114,21 +122,22 @@ export async function exportConfig(configData: any) {
 		});
 
 		if (!filePath) {
-			// cancelled
+			emitToast("导出赛制取消", 'info');
 			return;
 		}
 
 		const jsonStr = JSON.stringify(configData, null, 2);
 		await writeTextFile(filePath, jsonStr);
+		emitToast("导出赛制成功", 'success');
 	} catch (error) {
 		console.log("Failed to export config: ", error);
-		alert(`导出发生错误，请将此弹窗截图发送给维护人员: \n${error}`);
+		emitToast(`导出发生错误，请将此弹窗截图发送给维护人员: \n${error}`, 'error');
 	}
 }
 
 export async function resetSaveLocation() {
 	localStorage.removeItem(PATH_STORAGE_KEY);
-	alert("已清除默认存储位置。下次保存将重新询问！");
+	emitToast("已清除默认存储位置。下次保存将重新询问！", 'success');
 }
 
 export async function initAppScope() {

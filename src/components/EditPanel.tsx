@@ -4,6 +4,7 @@ import { ChevronLeft, Plus } from "lucide-react";
 import { DndContext, closestCenter, DragEndEvent, useSensor, useSensors, PointerSensor } from "@dnd-kit/core";
 import { arrayMove, SortableContext, verticalListSortingStrategy } from "@dnd-kit/sortable";
 import SortableStageCard from "./SortableStageCard";
+import { Dialog, DialogTitle, DialogContent, DialogContentText, DialogActions, Button } from "@mui/material";
 
 interface EditPanelProps {
 	isSaving: boolean
@@ -148,18 +149,33 @@ export default function( { isSaving, match, onBack, onSave }: EditPanelProps ) {
 					</SortableContext>
 				</DndContext>
 			</div>
-			{deletingId !== null && (
-				<div style={{ position: "fixed", top: 0, left: 0, right: 0, bottom: 0, background: "rgba(15, 23, 42, 0.6)", backdropFilter: "blur(4px)", display: "flex", alignItems: "center", justifyContent: "center", zIndex: 1000 }}>
-					<div style={{ background: "#1e293b", border: "1px solid #334155", padding: "24px", borderRadius: "12px", width: "320px", boxShadow: "0 20px 25px -5px rgba(0,0,0,0.5)" }}>
-						<h3 style={{ margin: "0 0 12px 0", color: "#f8fafc" }}>确认删除此环节？</h3>
-						<p style={{ color: "#94a3b8", fontSize: "0.9rem", margin: "0 0 20px 0" }}>该操作无法撤销，确定要将该环节从流程中移除吗？</p>
-						<div style={{ display: "flex", justifyContent: "flex-end", gap: "12px" }}>
-							<button onClick={() => setDeletingId(null)} style={{ padding: "8px 16px", borderRadius: "6px", border: "1px solid #475569", background: "transparent", color: "#94a3b8", cursor: "pointer" }}>取消</button>
-							<button onClick={handleDeleteConfirm} style={{ padding: "8px 16px", borderRadius: "6px", border: "none", background: "#f43f5e", color: "white", cursor: "pointer" }}>确认删除</button>
-						</div>
-					</div>
-				</div>
-			)}
+			<Dialog 
+				open={deletingId !== null} 
+				onClose={() => setDeletingId(null)}
+				sx={{
+					"& .MuiDialog-paper": {
+						backgroundColor: '#1e293b', 
+						color: '#f8fafc', 
+						border: "1px solid #334155",
+						borderRadius: '12px'
+					}
+				}}
+			>
+				<DialogTitle style={{ margin: "0 0 12px 0", color: "#f8fafc" }}>确认删除此环节？</DialogTitle>
+				<DialogContent>
+					<DialogContentText style={{ color: '#94a3b8' }}>
+						该操作无法撤销，确定要将该环节从流程中移除吗？
+					</DialogContentText>
+				</DialogContent>
+				<DialogActions style={{ display: "flex", justifyContent: "flex-end", gap: "12px", padding: "16px 24px" }}>
+					<Button onClick={() => setDeletingId(null)} sx={{ color: '#94a3b8', border: "1px solid #475569" }}>
+						取消
+					</Button>
+					<Button onClick={handleDeleteConfirm} variant="contained" sx={{ backgroundColor: '#f43f5e', '&:hover': { backgroundColor: '#e11d48' } }}>
+						确认删除
+					</Button>
+				</DialogActions>
+			</Dialog>
 		</div>
 	)
 }

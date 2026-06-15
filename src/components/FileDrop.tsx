@@ -1,7 +1,7 @@
 import { useRef } from "react";
 import { useTauriDropZone } from "../hooks/useTauriDropZone";
 import { DebateStagesSchema, DebateStages } from "../schema";
-import { UploadCloud } from "lucide-react";
+import { Download } from "lucide-react";
 import { readTextFile } from "@tauri-apps/plugin-fs";
 
 interface FileDropProps {
@@ -44,9 +44,8 @@ export default function FileDropZone({ onDrop }: FileDropProps) {
 					ref={dropRef} 
 					className={`drop-area ${isHovering ? "active" : ""}`}
 				>
-					<UploadCloud size={48} strokeWidth={1.5} color="white" />
-					<h4 style={{ margin: 0, color: "#f8fafc" }}>松开鼠标导入赛制</h4>
-					<p style={{ margin: 0, fontSize: "0.8rem", color: "#94a3b8" }}>支持 .json 配置文件</p>
+					<Download size={32} strokeWidth={1.5} color="white" />
+					<h4 style={{ margin: 0, color: "#f8fafc" }}>{isHovering ? "松开鼠标导入赛制" : "拖拽到此处导入赛制"}</h4>
 				</div>
 			</div>
 		</div>

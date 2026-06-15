@@ -6,9 +6,10 @@ interface MatchCardProps {
 	isExpanded: boolean;
 	onToggle: () => void;
 	onStartMatch: () => void;
+	onError?: (msg: string) => void;
 }
 
-export default function MatchCard({ m, isExpanded, onToggle, onStartMatch }: MatchCardProps) {
+export default function MatchCard({ m, isExpanded, onToggle, onStartMatch, onError }: MatchCardProps) {
 	const [shouldRender, setShouldRender] = useState(isExpanded);
 
 	if (isExpanded && !shouldRender) {
@@ -146,7 +147,9 @@ export default function MatchCard({ m, isExpanded, onToggle, onStartMatch }: Mat
 									}}
 									onClick={() => {
 										if (m.stages && m.stages.length > 0) onStartMatch();
-										else alert("该赛制没有任何环节，无法启动比赛！");
+										else {
+											if (onError) onError("该赛制没有任何环节，无法启动比赛！");
+										};
 									}}
 								>
 									启动比赛

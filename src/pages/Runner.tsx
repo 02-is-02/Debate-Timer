@@ -5,6 +5,7 @@ import * as configManager from "../utils/configManager";
 import { ChevronLeft, ChevronRight } from "lucide-react";
 import MatchCard from "../components/MatchCard";
 import { Maximize, Minimize } from "lucide-react";
+import { useToast } from "../utils/Context";
 
 function Runner() {
 	const [isFullScreen, setIsFullscreen] = useState(false);
@@ -14,6 +15,8 @@ function Runner() {
 	const [resetKey, setResetKey] = useState(0);
 	const [matches, setMatches] = useState<any[]>([]);
 	const [selectedId, setSelectedId] = useState("");
+
+	const { showToast } = useToast();
 
 	const fullScreenContainer = useRef<HTMLDivElement>(null);
 
@@ -56,7 +59,7 @@ function Runner() {
 			if (fullScreenContainer.current) {
 				await fullScreenContainer.current.requestFullscreen().catch(err => {
 					console.log("Failed to request fullscreen", err);
-					alert(`请求全屏失败，请将此弹窗截图发送给维护人员: \n${err}`)
+					showToast(`请求全屏失败，请将此弹窗截图发送给维护人员: \n${err}`, 'error')
 				})
 			}
 		} else {
@@ -76,7 +79,7 @@ function Runner() {
 			}
 		} catch (error) {
 			console.error("Failed to load matches:", error);
-			alert(`赛制加载发生错误，请将此弹窗截图发送给维护人员:\n${error}`);
+			showToast(`赛制加载发生错误，请将此弹窗截图发送给维护人员:\n${error}`, 'error');
 		}
 	}
 	loadData();
@@ -252,6 +255,7 @@ function Runner() {
 								isExpanded={selectedId === m.id}
 								onToggle={() => handleSelectMatch(m.id)}
 								onStartMatch={() => setIsPlaying(true)}
+								onError={(msg: string) => showToast(msg, 'error')}
 							/>
 						))}
 					</div>

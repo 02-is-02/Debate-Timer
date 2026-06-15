@@ -535,18 +535,19 @@ textarea,
 	flex: 1;
 	display: flex;
 	flex-direction: column;
-	border: 3px dashed var(--highlight-glass);
+	border: 1px dashed var(--highlight-glass);
 	border-radius: 20px;
 	background-color: var(--lgt-glass);
-	padding: 20px;
+	padding: 30px;
 	justify-items: center;
 	align-items: center;
+	gap: 10px;
 	transition: all 0.2s ease;
 	box-shadow: none;
 }
 
 .drop-area.active {
-	border: 3px dashed var(--lgt-blue);
+	border: 1px dashed var(--lgt-blue);
 	background-color: var(--std-glass);
 	box-shadow: 0 0 10px 3px #9cdcfe46, 
 				0 0 20px 5px #9cdcfe4f;

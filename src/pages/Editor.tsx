@@ -1,16 +1,29 @@
-import { DebateStages } from "../schema";
+import { DebateStage, DebateStages } from "../schema";
 import * as configManager from "../utils/configManager";
 import { useState, useEffect, useRef } from "react";
 import EditPanel from "../components/EditPanel";
 import { Plus, Trash2, FileText, Share } from "lucide-react";
 import FileDrop from "../components/FileDrop";
-import { confirm } from "@tauri-apps/plugin-dialog";
+import { useToast } from "../utils/Context";
+import { Dialog, DialogTitle, DialogContent, DialogContentText, DialogActions, Button } from "@mui/material";
+
+const DEFAULT_STAGES: DebateStage[] = [
+		{ id: 1, type: "single", title: "正方一辩立论", timeLimit: 180 },
+		{ id: 2, type: "single", title: "反方一辩立论", timeLimit: 180 },
+		{ id: 3, type: "double", title: "申论", leftTimeLimit: 240, rightTimeLimit: 240},
+		{ id: 4, type: "free", title: "自由辩论", leftTimeLimit: 240, rightTimeLimit: 240, start: "left" },
+	]
 
 export default function Editor() {
 	const [matches, setMatches] = useState<any[]>([]);
 	const [selectedId, setSelectedId] = useState<string>("");
 	const [isSaving, setIsSaving] = useState(false);
 	const [deletingId, setDeletingId] = useState<string | null>(null);
+	const [pendingImport, setPendingImport] = useState<DebateStages | null>(null);
+	const processingIds = useRef<Set<string>>(new Set());
+	const matchesRef = useRef<any[]>([]);
+
+	const { showToast } = useToast();
 
 	const typingTimeRef = useRef<ReturnType<typeof setTimeout> | null>(null);
 
@@ -28,7 +41,7 @@ export default function Editor() {
 				await configManager.saveConfigToDisk(stages);
 			} catch (error) {
 				console.log("Failed to save config: ", error);
-				alert(`赛制保存发生错误:\n${error}`);
+				showToast(`赛制保存发生错误:\n${error}`, 'error');
 			} finally {
 				setIsSaving(false);
 			}
@@ -37,7 +50,7 @@ export default function Editor() {
 
 	const handleAddMatch = () => {
 		const newId = `M-${crypto.randomUUID()}`;
-		const newMatch: DebateStages = { id: newId, name: "未命名新赛制", stages: []};
+		const newMatch: DebateStages = { id: newId, name: "未命名新赛制", stages: DEFAULT_STAGES};
 
 		const updatedMatches = [newMatch, ...matches];
 		setMatches(updatedMatches);
@@ -72,37 +85,53 @@ export default function Editor() {
 		configManager.exportConfig(match);
 	}
 
-	const handleImportMatch = async (match: DebateStages) => {
-		const exists = matches.some((item) => item.id === match.id);
+	const handleImportMatch = (match: DebateStages) => {
+		if (processingIds.current.has(match.id)) return; 
+		
+		processingIds.current.add(match.id);
+
+		const exists = matchesRef.current.some((item) => item.id === match.id);
 
 		if (exists) {
-			const isConfirmed = await confirm(
-				"已有同ID赛制存在，是否覆盖？", 
-				{ title: '导入助手', kind: 'warning' }
-			);
-
-			if (!isConfirmed) {
-				console.log("用户取消了覆盖导入");
-				return; 
-			}
+			setPendingImport(match);
+		} else {
+			executeImport(match);
 		}
+	};
 
+	const executeImport = (match: DebateStages) => {
 		setMatches((prev) => {
-			return exists 
+			const isExistInPrev = prev.some((m) => m.id === match.id);
+			return isExistInPrev 
 				? prev.map((m) => (m.id === match.id ? match : m)) 
-				: [...prev, match];
+				: [match, ...prev];
 		});
 
 		configManager.saveConfigToDisk(match)
 			.then(() => {
 				console.log("Import success"); 
-				alert("导入赛制存储成功");
+				showToast("导入赛制存储成功", 'success');
 			})
 			.catch((err) => {
 				console.error("Failed to save imported config", err);
-				alert("导入赛制存储失败，请重试");
+				showToast(`导入赛制存储失败:\n${err}`, 'error');
+			})
+			.finally(() => {
+				processingIds.current.delete(match.id);
+				setPendingImport(null);
 			});
 	};
+
+	const handleCancelImport = () => {
+		if (pendingImport) {
+			processingIds.current.delete(pendingImport.id);
+			setPendingImport(null);
+		}
+	};
+
+	useEffect(() => {
+		matchesRef.current = matches;
+	}, [matches]);
 
 	useEffect(() => {
 		return () => {
@@ -231,18 +260,69 @@ export default function Editor() {
 				)}
 			</div>
 
-			{deletingId !== null && (
-				<div style={{ position: "absolute", top: 0, left: 0, right: 0, bottom: 0, background: "rgba(15, 23, 42, 0.6)", backdropFilter: "blur(4px)", display: "flex", alignItems: "center", justifyContent: "center", zIndex: 1000 }}>
-					<div style={{ background: "#1e293b", border: "1px solid #334155", padding: "24px", borderRadius: "12px", width: "320px", boxShadow: "0 20px 25px -5px rgba(0,0,0,0.5)" }}>
-						<h3 style={{ margin: "0 0 12px 0", color: "#f8fafc" }}>确认删除此赛制？</h3>
-						<p style={{ color: "#94a3b8", fontSize: "0.9rem", margin: "0 0 20px 0" }}>该操作无法撤销，与其相关的所有环节配置都将被永久移除。</p>
-						<div style={{ display: "flex", justifyContent: "flex-end", gap: "12px" }}>
-							<button onClick={() => setDeletingId(null)} style={{ padding: "8px 16px", borderRadius: "6px", border: "1px solid #475569", background: "transparent", color: "#94a3b8", cursor: "pointer" }}>取消</button>
-							<button onClick={handleDeleteConfirm} style={{ padding: "8px 16px", borderRadius: "6px", border: "none", background: "#f43f5e", color: "white", cursor: "pointer" }}>确认删除</button>
-						</div>
-					</div>
-				</div>
-			)}
+			<Dialog 
+				open={deletingId !== null} 
+				onClose={() => setDeletingId(null)}
+				sx={{
+					"& .MuiDialog-paper": {
+						backgroundColor: '#1e293b', 
+						color: '#f8fafc', 
+						border: "1px solid #334155",
+						borderRadius: '12px'
+					}
+				}}
+			>
+				<DialogTitle style={{ margin: "0 0 12px 0", color: "#f8fafc" }}>确认删除此赛制？</DialogTitle>
+				<DialogContent>
+					<DialogContentText style={{ color: '#94a3b8' }}>
+						该操作无法撤销，与其相关的所有环节配置都将被永久移除。
+					</DialogContentText>
+				</DialogContent>
+				<DialogActions style={{ display: "flex", justifyContent: "flex-end", gap: "12px", padding: "16px 24px" }}>
+					<Button onClick={() => setDeletingId(null)} sx={{ color: '#94a3b8', border: "1px solid #475569" }}>
+						取消
+					</Button>
+					<Button onClick={handleDeleteConfirm} variant="contained" sx={{ backgroundColor: '#f43f5e', '&:hover': { backgroundColor: '#e11d48' } }}>
+						确认删除
+					</Button>
+				</DialogActions>
+			</Dialog>
+			<Dialog 
+				open={pendingImport !== null} 
+				onClose={handleCancelImport}
+				sx={{
+					"& .MuiDialog-paper": {
+						backgroundColor: "#1e293b",
+						color: "#f8fafc",
+						border: "1px solid #334155",
+						borderRadius: "12px",
+						boxShadow: "0 25px 50px -12px rgba(0, 0, 0, 0.5)"
+					}
+				}}
+			>
+				<DialogTitle sx={{ margin: 0, paddingBottom: 1, color: "var(--lgt-blue)" }}>
+					已有同名赛制存在
+				</DialogTitle>
+				<DialogContent>
+					<DialogContentText sx={{ color: '#94a3b8' }}>
+						赛制库中已经存在 ID 为 {pendingImport?.id} 的赛制。
+						<br/><br/>
+						继续导入将<strong>覆盖</strong>原有配置，是否继续？
+					</DialogContentText>
+				</DialogContent>
+				<DialogActions sx={{ padding: "16px 24px" }}>
+					<Button onClick={handleCancelImport} sx={{ color: '#94a3b8', border: "1px solid #475569" }}>
+						取消
+					</Button>
+					<Button 
+						onClick={() => pendingImport && executeImport(pendingImport)} 
+						variant="contained" 
+						sx={{ backgroundColor: 'var(std-blue)', color: 'black', fontWeight: 'bold', '&:hover': { backgroundColor: 'var(--lgt-blue)' } }}
+					>
+						确认覆盖
+					</Button>
+				</DialogActions>
+			</Dialog>
 			<FileDrop onDrop={(m) => handleImportMatch(m)}></FileDrop>
 		</div>
 	);
