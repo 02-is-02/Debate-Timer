@@ -1,6 +1,6 @@
 import { useState, useEffect, useRef } from "react";
 import Timer from "../components/Timer";
-import { DebateStage } from "../types";
+import { DebateStage } from "../schema";
 import * as configManager from "../utils/configManager";
 import { ChevronLeft, ChevronRight } from "lucide-react";
 import MatchCard from "../components/MatchCard";
@@ -267,7 +267,13 @@ function Runner() {
 		style={{ position: "relative" }}
 	>
 		<button
-			className="btn-fullscreen"
+			className="btn-icon"
+			style={{
+				position: "absolute",
+				top: "24px",
+				right: "30px",
+				"--btn-theme": "var(--alt-blue)"
+			} as React.CSSProperties }
 			onClick={toggleFullScreen}
 			title={isFullScreen ? "退出全屏" : "全屏模式"}
 		>

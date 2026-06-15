@@ -1,5 +1,5 @@
 import { useState } from "react";
-import { DebateStage } from "../types";
+import { DebateStage } from "../schema";
 
 interface MatchCardProps {
 	m: any;

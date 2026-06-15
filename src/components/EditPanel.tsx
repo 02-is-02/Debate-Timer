@@ -1,5 +1,5 @@
 import { useState, useEffect } from "react";
-import { DebateStages, DebateStage, StageType } from "../types";
+import { DebateStages, DebateStage, StageType } from "../schema";
 import { ChevronLeft, Plus } from "lucide-react";
 import { DndContext, closestCenter, DragEndEvent, useSensor, useSensors, PointerSensor } from "@dnd-kit/core";
 import { arrayMove, SortableContext, verticalListSortingStrategy } from "@dnd-kit/sortable";

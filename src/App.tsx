@@ -4,7 +4,7 @@ import HomePage from "./pages/Home";
 import Editor from "./pages/Editor";
 import Runner from "./pages/Runner";
 import Settings from "./pages/Settings";
-import { DebateStage } from "./types";
+import { DebateStage } from "./schema";
 import "./App.css";
 import Layout from "./components/Layout";
 

@@ -24,7 +24,9 @@
     "react": "^19.1.0",
     "react-dom": "^19.1.0",
     "react-router-dom": "^7.16.0",
-    "three": "^0.184.0"
+    "three": "^0.184.0",
+    "use-sound": "^5.0.0",
+    "zod": "^4.4.3"
   },
   "devDependencies": {
     "@tauri-apps/cli": "^2",

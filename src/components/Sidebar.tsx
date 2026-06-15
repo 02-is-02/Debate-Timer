@@ -1,6 +1,6 @@
 import { Menu, Home, FileEdit, Play, Settings, File } from "lucide-react";
 import { Link } from "react-router-dom";
-import { DebateStages } from "../types";
+import { DebateStages } from "../schema";
 import { Trash2 } from "lucide-react";
 import { useState } from "react";
 

@@ -1,8 +1,10 @@
-import { DebateStages } from "../types";
+import { DebateStages } from "../schema";
 import * as configManager from "../utils/configManager";
 import { useState, useEffect, useRef } from "react";
 import EditPanel from "../components/EditPanel";
-import { Plus, Trash2, FileText } from "lucide-react";
+import { Plus, Trash2, FileText, Share } from "lucide-react";
+import FileDrop from "../components/FileDrop";
+import { confirm } from "@tauri-apps/plugin-dialog";
 
 export default function Editor() {
 	const [matches, setMatches] = useState<any[]>([]);
@@ -66,6 +68,42 @@ export default function Editor() {
 		}
 	};
 
+	const handleExportMatch = ( match: DebateStages ) => {
+		configManager.exportConfig(match);
+	}
+
+	const handleImportMatch = async (match: DebateStages) => {
+		const exists = matches.some((item) => item.id === match.id);
+
+		if (exists) {
+			const isConfirmed = await confirm(
+				"已有同ID赛制存在，是否覆盖？", 
+				{ title: '导入助手', kind: 'warning' }
+			);
+
+			if (!isConfirmed) {
+				console.log("用户取消了覆盖导入");
+				return; 
+			}
+		}
+
+		setMatches((prev) => {
+			return exists 
+				? prev.map((m) => (m.id === match.id ? match : m)) 
+				: [...prev, match];
+		});
+
+		configManager.saveConfigToDisk(match)
+			.then(() => {
+				console.log("Import success"); 
+				alert("导入赛制存储成功");
+			})
+			.catch((err) => {
+				console.error("Failed to save imported config", err);
+				alert("导入赛制存储失败，请重试");
+			});
+	};
+
 	useEffect(() => {
 		return () => {
 			if (typingTimeRef.current) clearTimeout(typingTimeRef.current);
@@ -122,8 +160,7 @@ export default function Editor() {
 								key={m.id}
 								onClick={() => setSelectedId(m.id)}
 								style={{
-									
-									padding: "20px 24px",
+									padding: "0 20px",
 									margin: "0",
 									cursor: "pointer",
 									display: "flex",
@@ -139,12 +176,26 @@ export default function Editor() {
 										{m.name || "未命名赛制"}
 									</span>
 								</div>
-								<button
-									onClick={(e) => { e.stopPropagation(); setDeletingId(m.id); }}
-									style={{ background: "transparent", border: "none", color: "#f43f5e", cursor: "pointer", padding: "8px" }}
-								>
-									<Trash2 size={20} />
-								</button>
+								<div style={{ display: "flex", flexDirection: "row", gap: "10px" }}>
+									<button
+										onClick={(e) => { e.stopPropagation(); handleExportMatch(m)}}
+										className="btn-icon"
+										style={{
+											"--btn-theme": "var(--alt-blue)"
+										} as React.CSSProperties}
+									>
+										<Share size={20} />
+									</button>
+									<button
+										onClick={(e) => { e.stopPropagation(); setDeletingId(m.id); }}
+										className="btn-icon"
+										style={{
+											"--btn-theme": "#c22f48"
+										} as React.CSSProperties}
+									>
+										<Trash2 size={20} style={{ transform: "translateY(1px)" }} />
+									</button>
+								</div>
 							</div>
 						);
 					})}
@@ -192,6 +243,7 @@ export default function Editor() {
 					</div>
 				</div>
 			)}
+			<FileDrop onDrop={(m) => handleImportMatch(m)}></FileDrop>
 		</div>
 	);
 }

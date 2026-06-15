@@ -1,5 +1,5 @@
 import React, {useState} from "react";
-import { DebateStage, StageType } from "../types";
+import { DebateStage, StageType } from "../schema";
 import { useSortable } from "@dnd-kit/sortable";
 import { CSS } from "@dnd-kit/utilities";
 import { GripVertical, Trash2 } from "lucide-react";

@@ -1,4 +1,9 @@
 import { useState, useEffect } from "react";
+import useSound from "use-sound";
+import bellSfx from '../assets/bell.mp3';
+import tickSfx from '../assets/tick.mp3';
+import { Timeline, Volume } from "lucide-react";
+import { is } from "zod/locales";
 
 interface TimerProps {
 	title?: string; //timer title
@@ -16,14 +21,31 @@ export default function Timer({
 	onPause
 }: TimerProps) {
 	const [timeLeft, setTimeLeft] = useState(initialSeconds);
+	const [bell] = useSound(bellSfx, { volume: 0.8 });
+	const [tick, { stop: stopTick }] = useSound(tickSfx, { volume: 0.5 });
 
+	useEffect(() => {
+		if (!isRunning) {
+			stopTick();
+		}
+	}, [isRunning, stopTick])
 
 	useEffect(() => {
 		let timerId: number;
 
 		if (isRunning && timeLeft > 0) {
 			timerId = window.setInterval(() => {
-				setTimeLeft((prev) => (prev <= 1 ? 0 : prev - 1));
+				const nextTime = timeLeft - 1;
+				if (nextTime === 30) {
+					bell();
+				} else if ( nextTime === 5 ) {
+					tick();
+				} else if ( nextTime === 0 ) {
+					stopTick()
+					bell();
+					setTimeout(() => bell(), 500);
+				}
+				setTimeLeft(nextTime);
 			}, 1000)
 		}
 		return () => clearInterval(timerId) 
