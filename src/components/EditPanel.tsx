@@ -4,7 +4,7 @@ import { ChevronLeft, Plus } from "lucide-react";
 import { DndContext, closestCenter, DragEndEvent, useSensor, useSensors, PointerSensor } from "@dnd-kit/core";
 import { arrayMove, SortableContext, verticalListSortingStrategy } from "@dnd-kit/sortable";
 import SortableStageCard from "./SortableStageCard";
-import { Dialog, DialogTitle, DialogContent, DialogContentText, DialogActions, Button } from "@mui/material";
+import { Dialog, DialogTitle, DialogContent, DialogContentText, DialogActions, Button, CircularProgress } from "@mui/material";
 
 interface EditPanelProps {
 	isSaving: boolean
@@ -124,7 +124,10 @@ export default function( { isSaving, match, onBack, onSave }: EditPanelProps ) {
 					<ChevronLeft size={20} strokeWidth={2} />返回
 				</button>
 				<label
-					style={{ padding: "6px 12px", border: "none", background: "transparent", color: "var(--alt-blue)", fontSize: "0.8rem" }}>
+					style={{ display: "flex", flexDirection: "row", alignItems: "center", padding: "6px 12px", border: "none", background: "transparent", color: "var(--alt-blue)", fontSize: "0.8rem", gap: "10px" }}>
+					{isSaving && (
+						<CircularProgress size={10}/>
+					)}
 					{isSaving ? "正在保存，请勿关闭页面" : "已保存"}
 				</label>
 			</div>

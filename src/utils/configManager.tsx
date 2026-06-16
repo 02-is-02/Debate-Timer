@@ -2,8 +2,6 @@ import { writeTextFile, readTextFile, exists } from "@tauri-apps/plugin-fs";
 import { save, open as openDialog } from "@tauri-apps/plugin-dialog";
 import { join } from "@tauri-apps/api/path";
 import { invoke } from "@tauri-apps/api/core";
-import { success } from "zod";
-import { emit, emitTo } from "@tauri-apps/api/event";
 
 const CONFIG_FILE_NAME = 'user-match-config.json';
 const PATH_STORAGE_KEY = 'debate_timer_save_dir';
@@ -43,7 +41,7 @@ export async function loadConfigFromDisk() {
 	}
 }
 
-export async function saveConfigToDisk(newConfig: any) {
+export async function saveConfigToDisk(newConfig: any[]) {
 	try {
 		let saveDirPath = localStorage.getItem(PATH_STORAGE_KEY);
 
@@ -68,23 +66,7 @@ export async function saveConfigToDisk(newConfig: any) {
 
 		const fullFilePath = await join(saveDirPath, CONFIG_FILE_NAME);
 
-		let currList = [];
-		const hasOldFile = await exists(fullFilePath);
-
-		if (hasOldFile) {
-			const oldJsonStr = await readTextFile(fullFilePath);
-			currList = JSON.parse(oldJsonStr);
-			if (!Array.isArray(currList)) currList = [];
-		}
-
-		const existingIndex = currList.findIndex((item: any) => item.id === newConfig.id);
-		if (existingIndex >= 0) {
-			currList[existingIndex] = newConfig;
-		} else {
-			currList.push(newConfig);
-		}
-
-		const finalJsonStr = JSON.stringify(currList, null, 2);
+		const finalJsonStr = JSON.stringify(newConfig, null, 2);
 		await writeTextFile(fullFilePath, finalJsonStr);
 	} catch (error) {
 		console.log("Failed to save config: ", error);
@@ -92,29 +74,15 @@ export async function saveConfigToDisk(newConfig: any) {
 	}
 }
 
-export async function deleteConfigFromDisk(targetId: string) {
+export async function exportConfig(configData: any[]) {
+	if (configData.length <= 0 ) return;
 	try {
-		let saveDirPath = localStorage.getItem(PATH_STORAGE_KEY);
-		if (!saveDirPath) return;
-
-		let currList = await loadConfigFromDisk();
-		if (!Array.isArray(currList)) currList = [];
-		currList = currList.filter((item: any) => item.id !== targetId);
-
-		const jsonStr = JSON.stringify(currList, null, 2);
-		const fullFilePath = await join(saveDirPath, CONFIG_FILE_NAME);
-		await writeTextFile(fullFilePath, jsonStr);
-	} catch (error) {
-		console.log("Failed to delete config: ", error);
-		emitToast(`删除发生错误，请将此弹窗截图发送给维护人员: \n${error}`, 'error');
-	}
-}
-
-export async function exportConfig(configData: any) {
-	try {
+		const defaultFilename = configData.length === 1 
+			? `${configData[0].name}.json` 
+			: `辩论赛制合集.json`;
 		const filePath = await save({
 			title: '导出赛制配置',
-			defaultPath: `${configData.name}.json`,
+			defaultPath: defaultFilename,
 			filters: [{
 				name: 'JSON 配置文件',
 				extensions: ['json']
@@ -141,9 +109,9 @@ export async function resetSaveLocation() {
 }
 
 export async function initAppScope() {
-    const savedDirPath = localStorage.getItem(PATH_STORAGE_KEY);
-    if (savedDirPath) {
-        console.log("检测到历史存储路径，正在自动重新向 Rust 申请 Scope 授权...");
-        await askRustToAllowPath(savedDirPath);
-    }
+	const savedDirPath = localStorage.getItem(PATH_STORAGE_KEY);
+	if (savedDirPath) {
+		console.log("检测到历史存储路径，正在自动重新向 Rust 申请 Scope 授权...");
+		await askRustToAllowPath(savedDirPath);
+	}
 }

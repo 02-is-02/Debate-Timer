@@ -1,22 +1,10 @@
-import { Menu, Home, FileEdit, Play, Settings, File } from "lucide-react";
+import { Menu, Home, FileEdit, Play, Settings } from "lucide-react";
 import { Link } from "react-router-dom";
-import { DebateStages } from "../schema";
-import { Trash2 } from "lucide-react";
-import { useState } from "react";
 
 interface menuProps {
 	activeRow: string;
 	isFolded: boolean;
 	toggleFold: () => void;
-}
-
-interface matchesProps {
-	isFolded: boolean;
-	matches: any[];
-	toggleFold: () => void;
-	onSelect: (item: DebateStages) => void;
-	onAdd: () => void;
-	onDelete: (id: string) => void;
 }
 
 export default function MenuSidebar( {isFolded, toggleFold, activeRow}: menuProps ) {

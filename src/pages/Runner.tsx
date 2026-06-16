@@ -6,6 +6,7 @@ import { ChevronLeft, ChevronRight } from "lucide-react";
 import MatchCard from "../components/MatchCard";
 import { Maximize, Minimize } from "lucide-react";
 import { useToast } from "../utils/Context";
+import { useLayoutContext } from "../components/Layout";
 
 function Runner() {
 	const [isFullScreen, setIsFullscreen] = useState(false);
@@ -17,8 +18,10 @@ function Runner() {
 	const [selectedId, setSelectedId] = useState("");
 
 	const { showToast } = useToast();
+	const { setIsMatchPlaying } = useLayoutContext();
 
 	const fullScreenContainer = useRef<HTMLDivElement>(null);
+	const focusRef = useRef<{ [key: string]: HTMLDivElement | null}>({});
 
 	const selectedMatch = matches.find((m) => m.id === selectedId);
 	const stages: DebateStage[] = selectedMatch?.stages || [];
@@ -29,22 +32,36 @@ function Runner() {
 	const bText = activeSide === 'none' ? "开始环节" : "切换发言";
 
 	const handleSelectMatch = (id: string) => {
-		setSelectedId(id === selectedId ? "" : id);
+		const isClosing = id === selectedId; 
+
+		setSelectedId(isClosing ? "" : id);
 		setCurrIndex(0); 
 		setActiveSide("none");
+
+		if (isClosing) return;
+
+		setTimeout(() => {
+			const target = focusRef.current[id];
+			if (target) {
+				target.scrollIntoView({
+					behavior: 'smooth',
+					block: 'start'
+				});
+			}
+		}, 400);
 	};
 
 	const handleNext = () => {
 		if (!isLastPage) setCurrIndex((prev) => prev + 1);
 		setActiveSide("none");
 		setResetKey((prev) => prev + 1);
-	}
+	};
 
 	const handlePrev = () => {
 		if (!isFirstPage) setCurrIndex((prev) => prev - 1);
 		setActiveSide("none");
 		setResetKey((prev) => prev + 1);
-	}
+	};
 
 	const handleExit = () => {
 		setIsPlaying(false);
@@ -52,7 +69,7 @@ function Runner() {
 		if (document.fullscreenElement) {
 			document.exitFullscreen();
 		}
-	}
+	};
 
 	const toggleFullScreen = async () => {
 		if (!document.fullscreenElement) {
@@ -67,7 +84,15 @@ function Runner() {
 				await document.exitFullscreen();
 			}
 		}
-	}
+	};
+
+	useEffect(() => {
+		setIsMatchPlaying(isPlaying);
+
+		return () => {
+			setIsMatchPlaying(false);
+		};
+	}, [isPlaying, setIsMatchPlaying]);
 
 	useEffect(() => {
 	async function loadData() {
@@ -106,7 +131,7 @@ function Runner() {
 			target.isContentEditable
 		) {
 			return;
-		}
+		};
 
 		switch (e.key) {
 			case 'ArrowLeft':
@@ -155,76 +180,76 @@ function Runner() {
 	}, [handlePrev, handleNext, handleExit, setActiveSide, isFirstPage, isLastPage, currStage, activeSide]);
 
 	const renderCurrStage = () => {
-	if (!currStage) return null;
-	switch (currStage.type) {
-		case "single":
-			return (
-				<div style={{width: "400px"}}>
-					<Timer
-						key={`single-${resetKey}`}
-						title={currStage.title}
-						initialSeconds={currStage.timeLimit}
-						isRunning={activeSide === "left"}
-						onStart={() => setActiveSide("left")}
-						onPause={() => setActiveSide("none")}
-					/>
-				</div>
-			);
-		case "double":
-			return (
-				<div style={{ display: "flex", flexDirection: "column", alignItems: "center" }}>
-					<div style={{ display: "flex", gap: "2rem", width: "800px" }}>
-					<Timer 
-						key={`left-${resetKey}`}
-						title="正方" 
-						initialSeconds={currStage.leftTimeLimit} 
-						isRunning={activeSide === "left"}
-						onStart={() => setActiveSide("left")}
-						onPause={() => setActiveSide("none")}
-					/>
-					<Timer 
-						key={`right-${resetKey}`}
-						title="反方" 
-						initialSeconds={currStage.rightTimeLimit} 
-						isRunning={activeSide === "right"}
-						onStart={() => setActiveSide("right")}
-						onPause={() => setActiveSide("none")}
-					/>
+		if (!currStage) return null;
+		switch (currStage.type) {
+			case "single":
+				return (
+					<div style={{width: "400px"}}>
+						<Timer
+							key={`single-${resetKey}`}
+							title={currStage.title}
+							initialSeconds={currStage.timeLimit}
+							isRunning={activeSide === "left"}
+							onStart={() => setActiveSide("left")}
+							onPause={() => setActiveSide("none")}
+						/>
 					</div>
-				</div>
-			);
-		case "free":
-			return (
-				<div style={{ display: "flex", flexDirection: "column", alignItems: "center" }}>
-					<div style={{ display: "flex", gap: "2rem", width: "800px" }}>
-					<Timer 
-						key={`left-${resetKey}`}
-						title="正方" 
-						initialSeconds={currStage.leftTimeLimit} 
-						isRunning={activeSide === "left"}
-						onStart={() => setActiveSide("left")}
-						onPause={() => setActiveSide("none")}
-					/>
-					<Timer 
-						key={`right-${resetKey}`}
-						title="反方" 
-						initialSeconds={currStage.rightTimeLimit} 
-						isRunning={activeSide === "right"}
-						onStart={() => setActiveSide("right")}
-						onPause={() => setActiveSide("none")}
-					/>
+				);
+			case "double":
+				return (
+					<div style={{ display: "flex", flexDirection: "column", alignItems: "center" }}>
+						<div style={{ display: "flex", gap: "2rem", width: "800px" }}>
+						<Timer 
+							key={`left-${resetKey}`}
+							title="正方" 
+							initialSeconds={currStage.leftTimeLimit} 
+							isRunning={activeSide === "left"}
+							onStart={() => setActiveSide("left")}
+							onPause={() => setActiveSide("none")}
+						/>
+						<Timer 
+							key={`right-${resetKey}`}
+							title="反方" 
+							initialSeconds={currStage.rightTimeLimit} 
+							isRunning={activeSide === "right"}
+							onStart={() => setActiveSide("right")}
+							onPause={() => setActiveSide("none")}
+						/>
+						</div>
 					</div>
-				</div>
-			);
-		case "none":
-			return (
-				<h2>{currStage.title}</h2>
-			);
-		default:
-			return (
-				<div>Unknown</div>
-			);
-	}
+				);
+			case "free":
+				return (
+					<div style={{ display: "flex", flexDirection: "column", alignItems: "center" }}>
+						<div style={{ display: "flex", gap: "2rem", width: "800px" }}>
+						<Timer 
+							key={`left-${resetKey}`}
+							title="正方" 
+							initialSeconds={currStage.leftTimeLimit} 
+							isRunning={activeSide === "left"}
+							onStart={() => setActiveSide("left")}
+							onPause={() => setActiveSide("none")}
+						/>
+						<Timer 
+							key={`right-${resetKey}`}
+							title="反方" 
+							initialSeconds={currStage.rightTimeLimit} 
+							isRunning={activeSide === "right"}
+							onStart={() => setActiveSide("right")}
+							onPause={() => setActiveSide("none")}
+						/>
+						</div>
+					</div>
+				);
+			case "none":
+				return (
+					<h2>{currStage.title}</h2>
+				);
+			default:
+				return (
+					<div>Unknown</div>
+				);
+		}
 	};
 
 	if (!isPlaying) {
@@ -237,9 +262,10 @@ function Runner() {
 						height: "100%", 
 						overflowY: "auto",
 						overflowX: "hidden",
-						padding: "10px 4vw", 
+						padding: "25px 4vw", 
 						boxSizing: "border-box",
-						background: "var(--bg)"
+						background: "var(--bg)",
+						scrollPaddingTop: "20px"
 					}}
 				>
 					<h1 style={{
@@ -247,10 +273,11 @@ function Runner() {
 					}}>
 						赛制选择
 					</h1>
-					<div style={{ display: "flex", flexDirection: "column", gap: "16px", maxWidth: "1200px", margin: "0 auto" }}>
+					<div style={{ display: "flex", flexDirection: "column", gap: "16px", maxWidth: "1200px", margin: "36px auto" }}>
 						{matches.map((m) => (
 							<MatchCard 
 								key={m.id}
+								ref={(elm) => {focusRef.current[m.id] = elm}}
 								m={m}
 								isExpanded={selectedId === m.id}
 								onToggle={() => handleSelectMatch(m.id)}
@@ -262,79 +289,79 @@ function Runner() {
 				</div>
 			</div>
 		);
-}
+	}
 
 	return (
-	<div 
-		className="container" 
-		ref={fullScreenContainer}
-		style={{ position: "relative" }}
-	>
-		<button
-			className="btn-icon"
-			style={{
-				position: "absolute",
-				top: "24px",
-				right: "30px",
-				"--btn-theme": "var(--alt-blue)"
-			} as React.CSSProperties }
-			onClick={toggleFullScreen}
-			title={isFullScreen ? "退出全屏" : "全屏模式"}
+		<div 
+			className="container" 
+			ref={fullScreenContainer}
+			style={{ position: "relative" }}
 		>
-			{isFullScreen ? <Minimize size={20} /> : <Maximize size={20} />}
-		</button>
-		<div style={{ display: "flex", flexDirection: "column", minHeight: "100vh", width: "100%", padding: "1rem", boxSizing: "border-box" }}>
-			{/* stage indicator */}
-			<h3 style={{ 
-				textAlign: "center", 
-				color: "var(--alt-blue)", 
-				userSelect: "none" }}
+			<button
+				className="btn-icon"
+				style={{
+					position: "absolute",
+					top: "24px",
+					right: "30px",
+					"--btn-theme": "var(--alt-blue)"
+				} as React.CSSProperties }
+				onClick={toggleFullScreen}
+				title={isFullScreen ? "退出全屏" : "全屏模式"}
 			>
-				当前环节 {stages.length > 0 ? currIndex + 1 : 0} / {stages.length} : {currStage?.title || "暂无环节"}
-			</h3>
+				{isFullScreen ? <Minimize size={20} /> : <Maximize size={20} />}
+			</button>
+			<div style={{ display: "flex", flexDirection: "column", minHeight: "100vh", width: "100%", padding: "1rem", boxSizing: "border-box" }}>
+				{/* stage indicator */}
+				<h3 style={{ 
+					textAlign: "center", 
+					color: "var(--alt-blue)", 
+					userSelect: "none" }}
+				>
+					当前环节 {stages.length > 0 ? currIndex + 1 : 0} / {stages.length} : {currStage?.title || "暂无环节"}
+				</h3>
 
-			{/* render current stage */}
-			<div style={{ flex: 1, display: "flex", justifyContent: "center", alignItems: "center"}}>
-				{renderCurrStage()}
-			</div>
-
-			{/* bottom nav bar */}
-			<div style={{
-				display: "flex", 
-				justifyContent: "space-between", 
-				alignItems: "center",
-				marginTop: "2rem", 
-				paddingTop: "1rem"}}>
-				<div style={{flex: 1, display: "flex", justifyContent: "left", gap: "1rem"}}>
-					<button className="btn" onClick={handlePrev} disabled={isFirstPage}>
-						<ChevronLeft size={20} /> 上一环节
-					</button>
+				{/* render current stage */}
+				<div style={{ flex: 1, display: "flex", justifyContent: "center", alignItems: "center"}}>
+					{renderCurrStage()}
 				</div>
-				<div style={{flex: 3, display: "flex", justifyContent: "center", gap: "1rem"}}>
-					{currStage?.type === 'free' && (
-						<button className="btn" onClick={() => setActiveSide(activeSide === "none" ? (currStage.start || "left") : (activeSide === "left" ? "right" : "left"))}>
-							{bText}
-						</button>
-					)}
-					
-					<button className="btn" onClick={handleExit}>
-						退出比赛
-					</button>
 
-					{currStage?.type === 'free' && (
-						<button className="btn" onClick={() => { setActiveSide("none"); setResetKey((prev) => prev + 1); }}>
-							全局重置
+				{/* bottom nav bar */}
+				<div style={{
+					display: "flex", 
+					justifyContent: "space-between", 
+					alignItems: "center",
+					marginTop: "2rem", 
+					paddingTop: "1rem"}}>
+					<div style={{flex: 1, display: "flex", justifyContent: "left", gap: "1rem"}}>
+						<button className="btn" onClick={handlePrev} disabled={isFirstPage}>
+							<ChevronLeft size={20} /> 上一环节
 						</button>
-					)}
-				</div>
-				<div style={{flex: 1, display: "flex", justifyContent: "right", gap: "1rem"}}>
-					<button className="btn" onClick={handleNext} disabled={isLastPage}>
-						下一环节 <ChevronRight size={20} />
-					</button>
+					</div>
+					<div style={{flex: 3, display: "flex", justifyContent: "center", gap: "1rem"}}>
+						{currStage?.type === 'free' && (
+							<button className="btn" onClick={() => setActiveSide(activeSide === "none" ? (currStage.start || "left") : (activeSide === "left" ? "right" : "left"))}>
+								{bText}
+							</button>
+						)}
+						
+						<button className="btn" onClick={handleExit}>
+							退出比赛
+						</button>
+
+						{currStage?.type === 'free' && (
+							<button className="btn" onClick={() => { setActiveSide("none"); setResetKey((prev) => prev + 1); }}>
+								全局重置
+							</button>
+						)}
+					</div>
+					<div style={{flex: 1, display: "flex", justifyContent: "right", gap: "1rem"}}>
+						<button className="btn" onClick={handleNext} disabled={isLastPage}>
+							下一环节 <ChevronRight size={20} />
+						</button>
+					</div>
 				</div>
 			</div>
 		</div>
-	</div>
 	);
 }
 

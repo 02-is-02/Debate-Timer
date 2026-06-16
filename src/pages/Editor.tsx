@@ -1,31 +1,31 @@
-import { DebateStage, DebateStages } from "../schema";
-import * as configManager from "../utils/configManager";
 import { useState, useEffect, useRef } from "react";
-import EditPanel from "../components/EditPanel";
 import { Plus, Trash2, FileText, Share } from "lucide-react";
-import FileDrop from "../components/FileDrop";
-import { useToast } from "../utils/Context";
 import { Dialog, DialogTitle, DialogContent, DialogContentText, DialogActions, Button } from "@mui/material";
+import EditPanel from "../components/EditPanel";
+import { useToast } from "../utils/Context";
+import * as configManager from "../utils/configManager";
+import { DebateStage, DebateStages } from "../schema";
 
 const DEFAULT_STAGES: DebateStage[] = [
-		{ id: 1, type: "single", title: "正方一辩立论", timeLimit: 180 },
-		{ id: 2, type: "single", title: "反方一辩立论", timeLimit: 180 },
-		{ id: 3, type: "double", title: "申论", leftTimeLimit: 240, rightTimeLimit: 240},
-		{ id: 4, type: "free", title: "自由辩论", leftTimeLimit: 240, rightTimeLimit: 240, start: "left" },
-	]
+	{ id: 1, type: "single", title: "正方一辩立论", timeLimit: 180 },
+	{ id: 2, type: "single", title: "反方一辩立论", timeLimit: 180 },
+	{ id: 3, type: "double", title: "申论", leftTimeLimit: 240, rightTimeLimit: 240},
+	{ id: 4, type: "free", title: "自由辩论", leftTimeLimit: 240, rightTimeLimit: 240, start: "left" },
+]
 
 export default function Editor() {
 	const [matches, setMatches] = useState<any[]>([]);
 	const [selectedId, setSelectedId] = useState<string>("");
 	const [isSaving, setIsSaving] = useState(false);
 	const [deletingId, setDeletingId] = useState<string | null>(null);
-	const [pendingImport, setPendingImport] = useState<DebateStages | null>(null);
+	
+	const [pendingImport, setPendingImport] = useState<DebateStages[] | null>(null);
 	const processingIds = useRef<Set<string>>(new Set());
 	const matchesRef = useRef<any[]>([]);
 
 	const { showToast } = useToast();
-
 	const typingTimeRef = useRef<ReturnType<typeof setTimeout> | null>(null);
+	const pendingData = useRef<any[] | null>(null);
 
 	const selectedMatch = matches.find(m => m.id === selectedId);
 
@@ -34,11 +34,14 @@ export default function Editor() {
 		const updatedMatches = matches.map((m) => m.id === stages.id ? stages : m);
 		setMatches(updatedMatches);
 
+		pendingData.current = updatedMatches;
+
 		if (typingTimeRef.current) clearTimeout(typingTimeRef.current);
 
 		typingTimeRef.current = setTimeout(async () => {
 			try {
-				await configManager.saveConfigToDisk(stages);
+				await configManager.saveConfigToDisk(updatedMatches);
+				pendingData.current = null;
 			} catch (error) {
 				console.log("Failed to save config: ", error);
 				showToast(`赛制保存发生错误:\n${error}`, 'error');
@@ -51,13 +54,12 @@ export default function Editor() {
 	const handleAddMatch = () => {
 		const newId = `M-${crypto.randomUUID()}`;
 		const newMatch: DebateStages = { id: newId, name: "未命名新赛制", stages: DEFAULT_STAGES};
-
 		const updatedMatches = [newMatch, ...matches];
 		setMatches(updatedMatches);
 		setSelectedId(newId);
-		
+
 		try {
-			configManager.saveConfigToDisk(newMatch);
+			configManager.saveConfigToDisk(updatedMatches);
 		} catch (error) {
 			console.error("Failed to save matches:", error);
 		}
@@ -65,66 +67,77 @@ export default function Editor() {
 
 	const handleDeleteConfirm = async () => {
 		if (!deletingId) return;
-		
+
 		const updatedMatches = matches.filter((m) => m.id !== deletingId);
 		setMatches(updatedMatches);
-		
+
 		if (selectedId === deletingId) {
 			setSelectedId("");
 		}
 		setDeletingId(null);
 
 		try {
-			await configManager.deleteConfigFromDisk(deletingId);
+			await configManager.saveConfigToDisk(updatedMatches);
 		} catch (error) {
 			console.error("Failed to delete matches:", error);
 		}
 	};
 
 	const handleExportMatch = ( match: DebateStages ) => {
-		configManager.exportConfig(match);
+		configManager.exportConfig([match]);
 	}
 
-	const handleImportMatch = (match: DebateStages) => {
-		if (processingIds.current.has(match.id)) return; 
+	const handleImportMatch = (incomingData: any) => {
+		const importedMatches: DebateStages[] = Array.isArray(incomingData) ? incomingData : [incomingData];
 		
-		processingIds.current.add(match.id);
+		const validMatches = importedMatches.filter(m => !processingIds.current.has(m.id));
+		if (validMatches.length === 0) return;
 
-		const exists = matchesRef.current.some((item) => item.id === match.id);
+		validMatches.forEach(m => processingIds.current.add(m.id));
 
-		if (exists) {
-			setPendingImport(match);
+		const hasConflict = validMatches.some(newMatch => 
+			matchesRef.current.some(existing => existing.id === newMatch.id)
+		);
+
+		if (hasConflict) {
+			setPendingImport(validMatches);
 		} else {
-			executeImport(match);
+			executeImport(validMatches);
 		}
 	};
 
-	const executeImport = (match: DebateStages) => {
-		setMatches((prev) => {
-			const isExistInPrev = prev.some((m) => m.id === match.id);
-			return isExistInPrev 
-				? prev.map((m) => (m.id === match.id ? match : m)) 
-				: [match, ...prev];
+	const executeImport = (incomingMatches: DebateStages[]) => {
+		const finalMatches = [...matchesRef.current];
+
+		incomingMatches.forEach(newMatch => {
+			const existingIndex = finalMatches.findIndex(m => m.id === newMatch.id);
+			if (existingIndex >= 0) {
+				finalMatches[existingIndex] = newMatch;
+			} else {
+				finalMatches.unshift(newMatch);
+			}
 		});
 
-		configManager.saveConfigToDisk(match)
+		setMatches(finalMatches);
+
+		configManager.saveConfigToDisk(finalMatches)
 			.then(() => {
 				console.log("Import success"); 
-				showToast("导入赛制存储成功", 'success');
+				showToast(`成功导入 ${incomingMatches.length} 个赛制`, 'success');
 			})
 			.catch((err) => {
 				console.error("Failed to save imported config", err);
 				showToast(`导入赛制存储失败:\n${err}`, 'error');
 			})
 			.finally(() => {
-				processingIds.current.delete(match.id);
+				incomingMatches.forEach(m => processingIds.current.delete(m.id));
 				setPendingImport(null);
 			});
 	};
 
 	const handleCancelImport = () => {
 		if (pendingImport) {
-			processingIds.current.delete(pendingImport.id);
+			pendingImport.forEach(m => processingIds.current.delete(m.id));
 			setPendingImport(null);
 		}
 	};
@@ -134,8 +147,30 @@ export default function Editor() {
 	}, [matches]);
 
 	useEffect(() => {
+		const handleGlobalImportEvent = (e: Event) => {
+			const customEvent = e as CustomEvent;
+
+			handleImportMatch(customEvent.detail);
+		};
+
+		window.addEventListener('trigger-global-import', handleGlobalImportEvent);
+		return () => {
+			window.removeEventListener('trigger-global-import', handleGlobalImportEvent);
+		};
+	}, [])
+
+	useEffect(() => {
 		return () => {
 			if (typingTimeRef.current) clearTimeout(typingTimeRef.current);
+
+			if (pendingData.current) {
+				window.dispatchEvent(new CustomEvent('trigger-global-toast', {
+					detail: {
+						message: "检测到未保存赛制数据，正在保存...", 
+						severity: "info"}
+				}));
+				configManager.saveConfigToDisk(pendingData.current);
+			}
 		};
 	}, []);
 
@@ -179,7 +214,7 @@ export default function Editor() {
 
 				<div style={{ display: "flex", flexDirection: "column", gap: "16px", maxWidth: "1000px", margin: "0 auto" }}>
 					{matches.length === 0 && (
-						<div style={{ textAlign: "center", padding: "40px", color: "#64748b" }}>还没有任何赛制，点击右上角新建一个吧！</div>
+						<div style={{ textAlign: "center", padding: "40px", color: "var(--alt-blue)" }}>还没有任何赛制，点击右上角新建一个吧！</div>
 					)}
 
 					{matches.map((m) => {
@@ -263,14 +298,6 @@ export default function Editor() {
 			<Dialog 
 				open={deletingId !== null} 
 				onClose={() => setDeletingId(null)}
-				sx={{
-					"& .MuiDialog-paper": {
-						backgroundColor: '#1e293b', 
-						color: '#f8fafc', 
-						border: "1px solid #334155",
-						borderRadius: '12px'
-					}
-				}}
 			>
 				<DialogTitle style={{ margin: "0 0 12px 0", color: "#f8fafc" }}>确认删除此赛制？</DialogTitle>
 				<DialogContent>
@@ -290,24 +317,15 @@ export default function Editor() {
 			<Dialog 
 				open={pendingImport !== null} 
 				onClose={handleCancelImport}
-				sx={{
-					"& .MuiDialog-paper": {
-						backgroundColor: "#1e293b",
-						color: "#f8fafc",
-						border: "1px solid #334155",
-						borderRadius: "12px",
-						boxShadow: "0 25px 50px -12px rgba(0, 0, 0, 0.5)"
-					}
-				}}
 			>
 				<DialogTitle sx={{ margin: 0, paddingBottom: 1, color: "var(--lgt-blue)" }}>
-					已有同名赛制存在
+					发现同名赛制
 				</DialogTitle>
 				<DialogContent>
 					<DialogContentText sx={{ color: '#94a3b8' }}>
-						赛制库中已经存在 ID 为 {pendingImport?.id} 的赛制。
+						导入的文件中，包含已经存在于库中的赛制。
 						<br/><br/>
-						继续导入将<strong>覆盖</strong>原有配置，是否继续？
+						继续导入将<strong>覆盖</strong>原有的配置，是否继续？
 					</DialogContentText>
 				</DialogContent>
 				<DialogActions sx={{ padding: "16px 24px" }}>
@@ -317,13 +335,12 @@ export default function Editor() {
 					<Button 
 						onClick={() => pendingImport && executeImport(pendingImport)} 
 						variant="contained" 
-						sx={{ backgroundColor: 'var(std-blue)', color: 'black', fontWeight: 'bold', '&:hover': { backgroundColor: 'var(--lgt-blue)' } }}
+						sx={{ backgroundColor: 'var(--std-blue)', color: 'black', fontWeight: 'bold' }}
 					>
 						确认覆盖
 					</Button>
 				</DialogActions>
 			</Dialog>
-			<FileDrop onDrop={(m) => handleImportMatch(m)}></FileDrop>
 		</div>
 	);
 }

@@ -2,7 +2,7 @@ import InteractiveTextBackground from "../components/InteractiveTextField";
  
 export default function HomePage() {
 	return (
-		<div className="container" style={{ background: "none" }}>
+		<div className="container">
 			<InteractiveTextBackground />
 			<div style={{ flex: 1, overflow: "hidden", zIndex: 1, alignContent: "center" }}>
 				<div style={{
@@ -21,15 +21,15 @@ export default function HomePage() {
 						color: "white"
 						}}
 					>
-						标题标题标题标
+						辩论赛计时器
 					</span>
 					<span style={{ 
-						fontSize: "clamp(0.75rem, 2.5vw, 2rem)",
+						fontSize: "clamp(0.55rem, 1.8vw, 1.6rem)",
 						textAlign: "center",
 						color: "#999999"
 						}}
 					>
-						副标题副标题副标题
+						由亚太科技大学辩论队开发
 					</span>
 				</div>
 			</div>

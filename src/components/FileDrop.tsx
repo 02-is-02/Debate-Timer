@@ -3,16 +3,29 @@ import { useTauriDropZone } from "../hooks/useTauriDropZone";
 import { DebateStagesSchema, DebateStages } from "../schema";
 import { Download } from "lucide-react";
 import { readTextFile } from "@tauri-apps/plugin-fs";
+import { getCurrentWindow } from "@tauri-apps/api/window";
+import { useToast } from "../utils/Context";
 
 interface FileDropProps {
-	onDrop: (match: DebateStages) => void;
+	onDrop: (match: DebateStages | DebateStages[]) => void;
 }
 
-const processFileFromPath = async (filePath: string): Promise<DebateStages> => {
+const forcewindowToFront = async () => {
+	const appWindow = getCurrentWindow();
+	await appWindow.unminimize();
+	await appWindow.show();
+	await appWindow.setFocus();
+}
+
+const processFileFromPath = async (filePath: string): Promise<DebateStages | DebateStages[]> => {
 	try {
 		const fileContent = await readTextFile(filePath);
 		const rawJson = JSON.parse(fileContent);
-		return DebateStagesSchema.parse(rawJson);
+		if (Array.isArray(rawJson)) {
+			return rawJson.map(item => DebateStagesSchema.parse(item));
+		} else {
+			return DebateStagesSchema.parse(rawJson);
+		}
 	} catch (err: any) {
 		console.error("Tauri decode file failed: : ", err);
 		throw new Error(err.message || "文件读取或校验失败，请检查格式。");
@@ -21,18 +34,23 @@ const processFileFromPath = async (filePath: string): Promise<DebateStages> => {
 
 export default function FileDropZone({ onDrop }: FileDropProps) {
 	const dropRef = useRef<HTMLDivElement>(null!);
+	const { showToast } = useToast();
 	
 	const { isDragging, isHovering } = useTauriDropZone(dropRef, async (paths) => {
-		const targetPath = paths[0];
-		if (!targetPath.endsWith('.json')) {
-			alert("请上传 .json 格式的赛制文件！");
+		forcewindowToFront();
+		const targetPath = paths.filter(path => path.endsWith('.json'));
+		if (targetPath.length === 0) {
+			showToast("请勿导入JSON格式以外的文件！", "error")
 			return;
-		}
+		};
+
 		try {
-			const data = await processFileFromPath(targetPath);
+			const parsePromises = targetPath.map(path => processFileFromPath(path));
+			const results = await Promise.all(parsePromises);
+			const data = results.flat();
 			onDrop(data);
 		} catch (err: any) {
-			alert(`导入失败: ${err.message}`);
+			showToast(`导入发生错误: ${err.message}`, "error");
 		}
 	});
 
