@@ -2,21 +2,17 @@ import { useState, useEffect, useRef } from "react";
 import { Plus, Trash2, FileText, Share } from "lucide-react";
 import { Dialog, DialogTitle, DialogContent, DialogContentText, DialogActions, Button } from "@mui/material";
 import EditPanel from "../components/EditPanel";
+import NewMatchConfig from "../components/NewMatchConfig";
 import { useToast } from "../utils/Context";
 import * as configManager from "../utils/configManager";
-import { DebateStage, DebateStages } from "../schema";
-
-const DEFAULT_STAGES: DebateStage[] = [
-	{ id: 1, type: "single", title: "正方一辩立论", timeLimit: 180 },
-	{ id: 2, type: "single", title: "反方一辩立论", timeLimit: 180 },
-	{ id: 3, type: "double", title: "申论", leftTimeLimit: 240, rightTimeLimit: 240},
-	{ id: 4, type: "free", title: "自由辩论", leftTimeLimit: 240, rightTimeLimit: 240, start: "left" },
-]
+import { DebateStages } from "../schema";
+import { useLayoutContext } from "../components/Layout";
 
 export default function Editor() {
 	const [matches, setMatches] = useState<any[]>([]);
 	const [selectedId, setSelectedId] = useState<string>("");
 	const [isSaving, setIsSaving] = useState(false);
+	const [isCreating, setIsCreating] = useState(false);
 	const [deletingId, setDeletingId] = useState<string | null>(null);
 	
 	const [pendingImport, setPendingImport] = useState<DebateStages[] | null>(null);
@@ -24,6 +20,7 @@ export default function Editor() {
 	const matchesRef = useRef<any[]>([]);
 
 	const { showToast } = useToast();
+	const { setAllowDndWindow } = useLayoutContext();
 	const typingTimeRef = useRef<ReturnType<typeof setTimeout> | null>(null);
 	const pendingData = useRef<any[] | null>(null);
 
@@ -51,17 +48,22 @@ export default function Editor() {
 		}, 1500);
 	};
 
-	const handleAddMatch = () => {
-		const newId = `M-${crypto.randomUUID()}`;
-		const newMatch: DebateStages = { id: newId, name: "未命名新赛制", stages: DEFAULT_STAGES};
-		const updatedMatches = [newMatch, ...matches];
+	const handleToggleConfig = () => {
+		const nextState = !isCreating;
+		setIsCreating(nextState);
+		setAllowDndWindow(!nextState);
+	};
+
+	const handleAddMatch = (matchData: DebateStages) => {
+		const updatedMatches = [matchData, ...matches];
 		setMatches(updatedMatches);
-		setSelectedId(newId);
+		setSelectedId(matchData.id);
 
 		try {
 			configManager.saveConfigToDisk(updatedMatches);
 		} catch (error) {
 			console.error("Failed to save matches:", error);
+			showToast("保存失败", "error")
 		}
 	};
 
@@ -80,6 +82,7 @@ export default function Editor() {
 			await configManager.saveConfigToDisk(updatedMatches);
 		} catch (error) {
 			console.error("Failed to delete matches:", error);
+			showToast("保存失败", "error")
 		}
 	};
 
@@ -127,7 +130,7 @@ export default function Editor() {
 			})
 			.catch((err) => {
 				console.error("Failed to save imported config", err);
-				showToast(`导入赛制存储失败:\n${err}`, 'error');
+				showToast("导入赛制存储失败", 'error');
 			})
 			.finally(() => {
 				incomingMatches.forEach(m => processingIds.current.delete(m.id));
@@ -189,7 +192,6 @@ export default function Editor() {
 
 	return (
 		<div className="container" style={{ position: "relative", overflow: "hidden", display: "flex", width: "100%", height: "100vh" }}>
-			
 			<div 
 				className="hide-scrollbar" 
 				style={{ 
@@ -201,11 +203,12 @@ export default function Editor() {
 					background: "var(--bg)"
 				}}
 			>
+				<NewMatchConfig isActive={isCreating} toggleActive={handleToggleConfig} onCreate={(matchData) => handleAddMatch(matchData)} />
 				<div style={{ maxWidth: "1000px", margin: "0 auto 24px auto", display: "flex", justifyContent: "space-between", alignItems: "center" }}>
 					<h1 style={{ color: "white", margin: 0, fontSize: "2rem" }}>赛制库</h1>
 					<button 
 						className="btn-start-match" 
-						onClick={handleAddMatch}
+						onClick={handleToggleConfig}
 						style={{ padding: "10px 20px", display: "flex", alignItems: "center", gap: "8px", fontSize: "1rem" }}
 					>
 						<Plus size={20} strokeWidth={2.5} /> 新建赛制
@@ -335,7 +338,7 @@ export default function Editor() {
 					<Button 
 						onClick={() => pendingImport && executeImport(pendingImport)} 
 						variant="contained" 
-						sx={{ backgroundColor: 'var(--std-blue)', color: 'black', fontWeight: 'bold' }}
+						sx={{ backgroundColor: 'var(--std-blue)', '&:hover': { backgroundColor: '#3956fa'}, color: 'white', fontWeight: 'bold' }}
 					>
 						确认覆盖
 					</Button>

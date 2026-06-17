@@ -18,7 +18,7 @@ function Runner() {
 	const [selectedId, setSelectedId] = useState("");
 
 	const { showToast } = useToast();
-	const { setIsMatchPlaying } = useLayoutContext();
+	const { setAllowDndWindow } = useLayoutContext();
 
 	const fullScreenContainer = useRef<HTMLDivElement>(null);
 	const scrollContainer = useRef<HTMLDivElement>(null);
@@ -89,7 +89,7 @@ function Runner() {
 			if (fullScreenContainer.current) {
 				await fullScreenContainer.current.requestFullscreen().catch(err => {
 					console.log("Failed to request fullscreen", err);
-					showToast(`请求全屏失败，请将此弹窗截图发送给维护人员: \n${err}`, 'error')
+					showToast('请求全屏失败', 'error')
 				})
 			}
 		} else {
@@ -100,12 +100,12 @@ function Runner() {
 	};
 
 	useEffect(() => {
-		setIsMatchPlaying(isPlaying);
+		setAllowDndWindow(!isPlaying);
 
 		return () => {
-			setIsMatchPlaying(false);
+			setAllowDndWindow(true);
 		};
-	}, [isPlaying, setIsMatchPlaying]);
+	}, [isPlaying, setAllowDndWindow]);
 
 	useEffect(() => {
 	async function loadData() {
@@ -117,7 +117,7 @@ function Runner() {
 			}
 		} catch (error) {
 			console.error("Failed to load matches:", error);
-			showToast(`赛制加载发生错误，请将此弹窗截图发送给维护人员:\n${error}`, 'error');
+			showToast("赛制加载发生错误", 'error');
 		}
 	}
 	loadData();

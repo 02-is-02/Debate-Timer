@@ -1,8 +1,7 @@
-import React, {useState} from "react";
 import { DebateStage, StageType } from "../schema";
 import { useSortable } from "@dnd-kit/sortable";
 import { CSS } from "@dnd-kit/utilities";
-import { AlignHorizontalJustifyCenter, AlignJustify, AlignVerticalSpaceBetween, GripVertical, Trash2 } from "lucide-react";
+import { GripVertical, Trash2 } from "lucide-react";
 
 interface SortableStageCardProps {
 	stage: DebateStage;

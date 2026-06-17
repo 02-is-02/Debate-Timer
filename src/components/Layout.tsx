@@ -9,7 +9,20 @@ import { DebateStages } from "../schema";
 
 const darkTheme = createTheme({
 	palette: {
-		mode: "dark"
+		mode: "dark",
+		primary: {
+			main: '#3b82f6',
+		},
+		secondary: {
+			main: '#ffffff',
+		},
+		error: {
+			main: '#ef4444',
+		},
+		success: {
+			main: '#22c55e',
+		}
+
 	},
 	components: {
 		MuiDialog: {
@@ -32,21 +45,24 @@ const darkTheme = createTheme({
 				}
 			}
 		},
-		MuiCircularProgress: {
+		MuiTextField: {
 			styleOverrides: {
 				root: {
-					color: 'var(--alt-blue)'
+					"& .MuiInputBase-input::placeholder": {
+						fontSize: "12px",
+					},
+					"& .MuiFilledInput-root": { color: "white" },
+					"& .MuiInputLabel-root": { color: "#ffffff" }
 				}
 			}
 		}
 	}
 })
 
-export type LayoutContextType = { setIsMatchPlaying: React.Dispatch<React.SetStateAction<boolean>> }
+export type LayoutContextType = { setAllowDndWindow: React.Dispatch<React.SetStateAction<boolean>> }
 
-function GlobalDropCatcher({ isPlaying }: { isPlaying: boolean }) {
+function GlobalDropCatcher({ allowDndWindow }: { allowDndWindow: boolean }) {
 	const navigate = useNavigate();
-	if (isPlaying) return;
 
 	const handleGlobalDrop = (matches: DebateStages | DebateStages[]) => {
 
@@ -59,14 +75,14 @@ function GlobalDropCatcher({ isPlaying }: { isPlaying: boolean }) {
 		}, 150);
 	};
 
-	return <FileDrop onDrop={handleGlobalDrop} />
+	return <FileDrop isActive={allowDndWindow} onDrop={handleGlobalDrop} />
 }
 
 export default function Layout() {
 	const [isFolded, setIsFolded] = useState(() => {
 		return localStorage.getItem("sidebar_folded") === "true";
 	});
-	const [isMatchPlaying, setIsMatchPlaying] = useState(false);
+	const [allowDndWindow, setAllowDndWindow] = useState(true);
 
 	const currPage = useLocation().pathname;
 
@@ -77,12 +93,12 @@ export default function Layout() {
 	return (
 		<ThemeProvider theme={darkTheme}>
 			<ToastProvider>
-				<GlobalDropCatcher isPlaying={isMatchPlaying} />
+				<GlobalDropCatcher allowDndWindow={allowDndWindow} />
 
 				<div className="main-container">
 					<MenuSidebar isFolded={isFolded} toggleFold={() => setIsFolded(!isFolded)} activeRow={currPage}/>
 					<div style={{ flex: 1, minWidth: 0, position: "relative" }}>
-						<Outlet context={{setIsMatchPlaying}}/>
+						<Outlet context={{setAllowDndWindow}}/>
 					</div>
 				</div>
 			</ToastProvider>

@@ -7,17 +7,17 @@
   ],
   "permissions": [
     "core:default",
-	"core:window:allow-set-always-on-top",
+    "core:window:allow-set-always-on-top",
     "core:window:allow-set-focus",
     "core:window:allow-show",
     "core:window:allow-unminimize",
     "opener:default",
     "fs:default",
-	"dialog:default",
-	"dialog:allow-ask",
-	"dialog:allow-confirm",
-	"dialog:allow-open",
-	"dialog:allow-message",
+    "dialog:default",
+    "dialog:allow-ask",
+    "dialog:allow-confirm",
+    "dialog:allow-open",
+    "dialog:allow-message",
     {
       "identifier": "fs:allow-read-text-file",
       "allow": [

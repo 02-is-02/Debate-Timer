@@ -2,8 +2,6 @@ import { useState, useEffect } from "react";
 import useSound from "use-sound";
 import bellSfx from '../assets/bell.mp3';
 import tickSfx from '../assets/tick.mp3';
-import { Timeline, Volume } from "lucide-react";
-import { is } from "zod/locales";
 
 interface TimerProps {
 	title?: string; //timer title

@@ -7,6 +7,7 @@ import { getCurrentWindow } from "@tauri-apps/api/window";
 import { useToast } from "../utils/Context";
 
 interface FileDropProps {
+	isActive: boolean;
 	onDrop: (match: DebateStages | DebateStages[]) => void;
 }
 
@@ -32,12 +33,13 @@ const processFileFromPath = async (filePath: string): Promise<DebateStages | Deb
 	}
 };
 
-export default function FileDropZone({ onDrop }: FileDropProps) {
+export default function FileDropZone({ isActive, onDrop }: FileDropProps) {
 	const dropRef = useRef<HTMLDivElement>(null!);
 	const { showToast } = useToast();
 	
 	const { isDragging, isHovering } = useTauriDropZone(dropRef, async (paths) => {
 		forcewindowToFront();
+		if (!isActive) return;
 		const targetPath = paths.filter(path => path.endsWith('.json'));
 		if (targetPath.length === 0) {
 			showToast("请勿导入JSON格式以外的文件！", "error")
@@ -50,12 +52,14 @@ export default function FileDropZone({ onDrop }: FileDropProps) {
 			const data = results.flat();
 			onDrop(data);
 		} catch (err: any) {
-			showToast(`导入发生错误: ${err.message}`, "error");
+			showToast("导入发生错误", "error");
 		}
 	});
 
+	if (!isActive) return null;
+
 	return (
-		<div className={`drop-overlay ${isDragging ? "is-dragging" : ""}`}>
+		<div className={`overlay ${isDragging ? "is-dragging" : ""}`}>
 			<div className={`drop-window ${isDragging ? "active" : ""}`}>
 				<h3 style={{ color: "white" }}>导入赛制</h3>
 				<div 

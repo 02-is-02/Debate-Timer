@@ -18,7 +18,7 @@ async function askRustToAllowPath(path: string) {
 		console.log("React: Rust dynamic scope done")
 	} catch (error) {
 		console.error("React: dynnamic scope assignmennt failed: ", error);
-		emitToast(`动态授权发生错误，请将此弹窗截图发送给维护人员:\n${error}`, 'error')
+		emitToast("动态授权发生错误", 'error')
 	}
 }
 
@@ -37,7 +37,7 @@ export async function loadConfigFromDisk() {
 		return JSON.parse(jsonStr);
 	} catch (error) {
 		console.log("Failed to load config: ", error);
-		emitToast(`加载发生错误，请将此弹窗截图发送给维护人员: \n${error}`, 'error');
+		emitToast("加载发生错误", 'error');
 	}
 }
 
@@ -70,7 +70,7 @@ export async function saveConfigToDisk(newConfig: any[]) {
 		await writeTextFile(fullFilePath, finalJsonStr);
 	} catch (error) {
 		console.log("Failed to save config: ", error);
-		emitToast(`保存发生错误，请将此弹窗截图发送给维护人员: \n${error}`, 'error');
+		emitToast("保存发生错误", 'error');
 	}
 }
 
@@ -99,7 +99,7 @@ export async function exportConfig(configData: any[]) {
 		emitToast("导出赛制成功", 'success');
 	} catch (error) {
 		console.log("Failed to export config: ", error);
-		emitToast(`导出发生错误，请将此弹窗截图发送给维护人员: \n${error}`, 'error');
+		emitToast("导出发生错误", 'error');
 	}
 }
 
@@ -114,4 +114,13 @@ export async function initAppScope() {
 		console.log("检测到历史存储路径，正在自动重新向 Rust 申请 Scope 授权...");
 		await askRustToAllowPath(savedDirPath);
 	}
+}
+
+export function fileToBase64(file: File): Promise<string> {
+	return new Promise((resolve, reject) => {
+		const reader = new FileReader();
+		reader.readAsDataURL(file);
+		reader.onload = () => resolve(reader.result as string);
+		reader.onerror = error => reject(error);
+	});
 }
