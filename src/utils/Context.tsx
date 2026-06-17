@@ -45,13 +45,22 @@ export function ToastProvider({ children }: { children: ReactNode }) {
 				autoHideDuration={3000} 
 				onClose={handleClose}
 				anchorOrigin={{ vertical: 'top', horizontal: 'center' }}
-				sx={{ zIndex: 9999 }}
+				sx={{ 
+					zIndex: 9999,
+					maxWidth: 'min(70vw, 450px)',
+					wordBreak: 'break-word',
+					whiteSpace: 'pre-wrap',
+					lineHeight: 1.5
+				}}
 			>
 				<Alert 
 					onClose={handleClose} 
 					severity={toast.severity} 
 					variant="outlined"
-					sx={{ width: '100%', boxShadow: "0 4px 12px rgba(0,0,0,0.5)" }}
+					sx={{ 
+						width: '100%',
+						boxShadow: "0 4px 12px rgba(0,0,0,0.5)" 
+					}}
 				>
 					{toast.message}
 				</Alert>

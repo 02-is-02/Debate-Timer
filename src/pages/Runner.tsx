@@ -21,34 +21,47 @@ function Runner() {
 	const { setIsMatchPlaying } = useLayoutContext();
 
 	const fullScreenContainer = useRef<HTMLDivElement>(null);
+	const scrollContainer = useRef<HTMLDivElement>(null);
 	const focusRef = useRef<{ [key: string]: HTMLDivElement | null}>({});
 
 	const selectedMatch = matches.find((m) => m.id === selectedId);
 	const stages: DebateStage[] = selectedMatch?.stages || [];
-
 	const currStage = stages[currIndex]; 
 	const isFirstPage = currIndex === 0;
 	const isLastPage = stages.length > 0 && currIndex === stages.length - 1;
 	const bText = activeSide === 'none' ? "开始环节" : "切换发言";
 
-	const handleSelectMatch = (id: string) => {
+	const handleSelectMatch = (id: string, index: number) => {
 		const isClosing = id === selectedId; 
 
-		setSelectedId(isClosing ? "" : id);
+		if (isClosing) {
+			setSelectedId("");
+			setCurrIndex(0); 
+			setActiveSide("none");
+			return;
+		}
+
+		const target = focusRef.current[id];
+		let targetScrollTop = target ? target.offsetTop : 0;
+
+		const currOpenIndex = matches.findIndex(m => m.id === selectedId);
+
+		if (currOpenIndex !== -1 && currOpenIndex < index) {
+			targetScrollTop -= 430;
+		}
+
+		setSelectedId(id);
 		setCurrIndex(0); 
 		setActiveSide("none");
 
-		if (isClosing) return;
-
 		setTimeout(() => {
-			const target = focusRef.current[id];
-			if (target) {
-				target.scrollIntoView({
-					behavior: 'smooth',
-					block: 'start'
+			if (scrollContainer.current) {
+				scrollContainer.current.scrollTo({
+					behavior: "smooth",
+					top: Math.max(0, targetScrollTop - 20)
 				});
 			}
-		}, 400);
+		}, 10);
 	};
 
 	const handleNext = () => {
@@ -257,12 +270,14 @@ function Runner() {
 			<div className="container" style={{ overflow: "hidden" }}>
 				<div 
 					className="hide-scrollbar"
+					ref={scrollContainer}
 					style={{ 
+						position: "relative",
 						width: "100%", 
 						height: "100%", 
 						overflowY: "auto",
 						overflowX: "hidden",
-						padding: "25px 4vw", 
+						padding: "25px 4vw 700px 4vw", 
 						boxSizing: "border-box",
 						background: "var(--bg)",
 						scrollPaddingTop: "20px"
@@ -274,13 +289,13 @@ function Runner() {
 						赛制选择
 					</h1>
 					<div style={{ display: "flex", flexDirection: "column", gap: "16px", maxWidth: "1200px", margin: "36px auto" }}>
-						{matches.map((m) => (
+						{matches.map((m, index) => (
 							<MatchCard 
 								key={m.id}
 								ref={(elm) => {focusRef.current[m.id] = elm}}
 								m={m}
 								isExpanded={selectedId === m.id}
-								onToggle={() => handleSelectMatch(m.id)}
+								onToggle={() => handleSelectMatch(m.id, index)}
 								onStartMatch={() => setIsPlaying(true)}
 								onError={(msg: string) => showToast(msg, 'error')}
 							/>
