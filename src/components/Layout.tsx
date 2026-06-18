@@ -28,7 +28,7 @@ const darkTheme = createTheme({
 		MuiDialog: {
 			styleOverrides: {
 				paper: {
-					backgroundColor: "#1e293b",
+					backgroundColor: "var(--dark-blue)",
 					color: "#f8fafc",
 					border: "1px solid #334155",
 					borderRadius: "12px",
@@ -52,7 +52,7 @@ const darkTheme = createTheme({
 						fontSize: "12px",
 					},
 					"& .MuiFilledInput-root": { color: "white" },
-					"& .MuiInputLabel-root": { color: "#ffffff" }
+					"& .MuiInputLabel-root": { color: "white" }
 				}
 			}
 		}

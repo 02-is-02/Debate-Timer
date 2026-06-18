@@ -96,11 +96,11 @@ export default function NewMatchConfig({ isActive, toggleActive, onCreate }: new
 			const newStage = DebateStagesSchema.parse(data);
 
 			if (onCreate) onCreate(newStage);
-			toggleActive();
+			handleClose();
 			showToast("赛制生成成功！", "success");
 		} catch (error: any) {
 			console.error("Generate failed:", error);
-			showToast(`生成失败`, "error");
+			showToast(`${error}`, "error");
 		} finally {
 			setIsRequesting(false);
 		}
@@ -156,6 +156,7 @@ export default function NewMatchConfig({ isActive, toggleActive, onCreate }: new
 	const handleClose = () => {
 		setName("");
 		setText("");
+		setAttachments([]);
 		toggleActive();
 	}
 
@@ -236,7 +237,7 @@ export default function NewMatchConfig({ isActive, toggleActive, onCreate }: new
 
 					<TextField 
 						label="提示词"
-						placeholder="在此输入AI提示词，若为空则以基础模板生成新赛制&#10;可粘贴/拖入赛事名称、赛制文件、赛制照片、文件链接等&#10;注：大语言模型可能出现幻觉，请注意检查"
+						placeholder="在此输入AI提示词，若为空则以基础模板生成新赛制&#10;可粘贴/拖入赛事名称、赛制文件、赛制照片、文件链接等&#10;注：大语言模型可能出现幻觉，请注意检查，输入赛制文件或照片为佳"
 						value={text}
 						onChange={(e) => setText(e.target.value)}
 						variant="filled"

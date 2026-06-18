@@ -84,10 +84,10 @@ export default function SortableStageCard({
 									className="edit-select"
 									onChange={(e) => onUpdate({ type: e.target.value as StageType })}
 								>
-									<option value="single">单人发言</option>
-									<option value="double">双人对辩</option>
+									<option value="single">单计时器</option>
+									<option value="double">双计时器</option>
 									<option value="free">自由辩论</option>
-									<option value="none">纯展示/无计时</option>
+									<option value="none">无计时器</option>
 								</select>
 							</div>
 						</div>
