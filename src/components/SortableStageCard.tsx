@@ -30,8 +30,13 @@ export default function SortableStageCard({
 	} = useSortable({ id: stage.id });
 
 	const style = {
-		transform: CSS.Transform.toString(transform),
-		transition
+		transform: CSS.Translate.toString(transform),
+		transition: [
+        transition,
+        "background-color 0.2s ease, border-color 0.2s ease, box-shadow 0.2s ease"
+    ]
+        .filter(Boolean)
+        .join(", "),
 	};
 
 	return (

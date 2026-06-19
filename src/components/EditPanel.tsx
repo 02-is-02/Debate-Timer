@@ -1,10 +1,11 @@
 import { useState, useEffect } from "react";
 import { DebateStages, DebateStage, StageType } from "../schema";
 import { ChevronLeft, Plus } from "lucide-react";
-import { DndContext, closestCenter, DragOverlay, DragStartEvent, DragEndEvent, useSensor, useSensors, PointerSensor, defaultDropAnimationSideEffects } from "@dnd-kit/core";
+import { DndContext, closestCenter, DragEndEvent, useSensor, useSensors, PointerSensor } from "@dnd-kit/core";
+import { restrictToVerticalAxis } from "@dnd-kit/modifiers";
 import { arrayMove, SortableContext, verticalListSortingStrategy } from "@dnd-kit/sortable";
 import SortableStageCard from "./SortableStageCard";
-import { Dialog, DialogTitle, DialogContent, DialogContentText, DialogActions, Button, CircularProgress, isEmpty } from "@mui/material";
+import { Dialog, DialogTitle, DialogContent, DialogContentText, DialogActions, Button, CircularProgress } from "@mui/material";
 
 interface EditPanelProps {
 	isSaving: boolean
@@ -17,10 +18,7 @@ export default function( { isSaving, match, onBack, onSave }: EditPanelProps ) {
 	const [editingPage, setEditingPage] = useState<DebateStages>(match);
 	const [expandedIds, setExpandedIds] = useState<number[]>([]);
 	const [deletingId, setDeletingId] = useState<number | null>(null);
-	const [activeId, setActiveId] = useState<number | null>(null);
-
-	const activeStage = editingPage.stages.find((s) => s.id === activeId);
-	const activeIndex = editingPage.stages.findIndex((s) => s.id === activeId);
+	const [isDragging, setIsDragging] = useState(false);
 
 	useEffect(() => {
 		setEditingPage(match);
@@ -55,7 +53,7 @@ export default function( { isSaving, match, onBack, onSave }: EditPanelProps ) {
 		setDeletingId(null);
 	}
 
-	const handleInsertStage = ( match: DebateStages, index: number) => {
+	const handleInsertStage = (index: number) => {
 		const newId = editingPage.stages.length > 0 
 			? Math.max(...editingPage.stages.map(s => s.id)) + 1 
 			: 0;
@@ -107,11 +105,11 @@ export default function( { isSaving, match, onBack, onSave }: EditPanelProps ) {
 			setEditingPage(updatedPage);
 			onSave?.(updatedPage);
 		}
-		setActiveId(null);
+		setIsDragging(false);
 	}
 
 	const renderDivider = (index: number) => (
-		<div className="stage-divider" onClick={() => handleInsertStage(editingPage, index)} title="在此插入新环节">
+		<div className={`stage-divider ${isDragging ? 'hidden' : ''}`} onClick={() => handleInsertStage(index)} title="在此插入新环节">
 			<div className="stage-divider-line"></div>
 			<button className="stage-divider-btn">
 				<Plus size={14} strokeWidth={3} />
@@ -148,8 +146,11 @@ export default function( { isSaving, match, onBack, onSave }: EditPanelProps ) {
 				/>
 				<DndContext
 					sensors={sensors}
+					modifiers={[restrictToVerticalAxis]}
 					collisionDetection={closestCenter}
 					onDragEnd={handleDragEnd}
+					onDragStart={() => setIsDragging(true)}
+					onDragCancel={() => setIsDragging(false)}
 				>
 					<SortableContext items={editingPage.stages.map((s) => s.id)} strategy={verticalListSortingStrategy}>
 						{renderDivider(0)}

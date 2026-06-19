@@ -1,4 +1,4 @@
-import { Button, TextField, Box, Chip, Stack } from "@mui/material";
+import { Button, TextField, Box, Chip, Stack, isEmpty } from "@mui/material";
 import { LoadingButton } from "@mui/lab";
 import { DebateStage, DebateStages, DebateStagesSchema } from "../schema";
 import React, { useState, useRef } from "react";
@@ -52,13 +52,15 @@ export default function NewMatchConfig({ isActive, toggleActive, onCreate }: new
 		const newId = `M-${crypto.randomUUID()}`;
 		const savedApiKey = localStorage.getItem('gemini_api_key') || '';
 		const savedModel = localStorage.getItem('gemini_model') || 'gemini-1.5-flash';
+		const apiNeeded = !isEmpty(text.trim()) || attachments.length > 0;
+		console.log("API needed:", apiNeeded, "Saved API Key:", !!savedApiKey, "Prompt text:", text.trim(), "Attachments:", attachments);
 
-		if (!savedApiKey) {
+		if (!savedApiKey && apiNeeded) {
 			showToast("请先在设置中填写 Gemini API Key！", "error");
 			return;
 		}
 
-		if (!text.trim() && attachments.length === 0) {
+		if (!apiNeeded) {
 			const defaultMatchData: DebateStages = {
 				id: newId,
 				name: name.trim() || "未命名赛制",

@@ -239,8 +239,8 @@ textarea,
 	user-select: none;
 }
 
-.stage-card:not(.expanded):hover, .stage-header:hover {
-	background-color: #333948;
+.stage-card:not(.expanded):hover{
+	background-color: #424448;
 }
 
 .stage-header-title {
@@ -294,6 +294,12 @@ textarea,
 	margin: 0 0;
 	cursor: pointer;
 	z-index: 1;
+	transition: opacity 0.2s ease;
+}
+
+.stage-divider.hidden {
+	opacity: 0;
+	pointer-events: none;
 }
 
 .stage-divider-line {
