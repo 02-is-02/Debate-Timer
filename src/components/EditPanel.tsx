@@ -128,8 +128,7 @@ export default function( { isSaving, match, onBack, onSave }: EditPanelProps ) {
 				>
 					<ChevronLeft size={20} strokeWidth={2} />返回
 				</button>
-				<label
-					style={{ display: "flex", flexDirection: "row", alignItems: "center", padding: "6px 12px", border: "none", background: "transparent", color: "var(--alt-blue)", fontSize: "0.8rem", gap: "10px" }}>
+				<label className="mini-label">
 					{isSaving && (
 						<CircularProgress size={10}/>
 					)}

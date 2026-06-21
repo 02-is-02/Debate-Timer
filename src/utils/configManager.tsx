@@ -22,6 +22,38 @@ async function askRustToAllowPath(path: string) {
 	}
 }
 
+export async function checkDefaultPath() {
+	try {
+		let saveDirPath = localStorage.getItem(PATH_STORAGE_KEY);
+
+		if (!saveDirPath) {
+			const selectedPath = await openDialog({
+				directory: true,
+				multiple: false,
+				title: '未选择默认路径：请选择赛制库的存储文件夹'
+			});
+
+			if (!selectedPath) {
+				// cancelled
+				return;
+			}
+
+			saveDirPath = selectedPath as string;
+
+			await askRustToAllowPath(saveDirPath)
+
+			localStorage.setItem(PATH_STORAGE_KEY, saveDirPath);
+
+			return false;
+		}
+
+		return true;
+	} catch (error) {
+		console.log("Failed to load config: ", error);
+		emitToast("未知错误", 'error');
+	}
+}
+
 export async function loadConfigFromDisk() {
 	try {
 		const saveDirPath = localStorage.getItem(PATH_STORAGE_KEY);

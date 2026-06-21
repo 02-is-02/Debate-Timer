@@ -48,7 +48,12 @@ export default function Editor() {
 		}, 1500);
 	};
 
-	const handleToggleConfig = () => {
+	const handleToggleConfig = async () => {
+		if (!await configManager.checkDefaultPath()) {
+			await configManager.initAppScope();
+			const loadedFile = await configManager.loadConfigFromDisk();
+			if (Array.isArray(loadedFile)) setMatches(loadedFile);
+		}
 		const nextState = !isCreating;
 		setIsCreating(nextState);
 		setAllowDndWindow(!nextState);
