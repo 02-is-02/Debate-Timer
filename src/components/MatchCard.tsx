@@ -6,13 +6,16 @@ interface MatchCardProps {
 	m: any;
 	isExpanded: boolean;
 	onToggle: () => void;
-	onStartMatch: () => void;
+	onStartMatch: (title: string, leftN: string, rightN: string) => void;
 	onError?: (msg: string) => void;
 }
 
 const MatchCard = forwardRef<HTMLDivElement, MatchCardProps>(
 	({ m, isExpanded, onToggle, onStartMatch, onError }, ref) => {
 		const [shouldRender, setShouldRender] = useState(isExpanded);
+		const [title, setTitle] = useState("");
+		const [leftName, setLeftName] = useState("");
+		const [rightName, setRightName] = useState("");
 
 		if (isExpanded && !shouldRender) {
 			setShouldRender(true);
@@ -131,17 +134,17 @@ const MatchCard = forwardRef<HTMLDivElement, MatchCardProps>(
 								
 								<div style={{ display: "flex", flexDirection: "column", gap: "8px", marginBottom: "20px" }}>
 									<label style={{ fontSize: "0.9rem", color: "#94a3b8" }}>辩题</label>
-									<input className="glass-input" placeholder="例如：人工智能是否会取代人类" style={{ width: "100%", boxSizing: "border-box" }} />
+									<input className="glass-input" placeholder="例如：人工智能是否会取代人类" style={{ width: "100%", boxSizing: "border-box" }} onChange={(e) => setTitle(e.target.value)}/>
 								</div>
 
 								<div style={{ display: "flex", gap: "20px", marginBottom: "2rem" }}>
 									<div style={{ flex: 1, display: "flex", flexDirection: "column", gap: "8px" }}>
 										<label style={{ fontSize: "0.9rem", color: "#60a5fa" }}>正方队伍</label>
-										<input className="glass-input" placeholder="输入正方队名" style={{ width: "100%", boxSizing: "border-box" }} />
+										<input className="glass-input" placeholder="输入正方队名" style={{ width: "100%", boxSizing: "border-box" }} onChange={(e) => setLeftName(e.target.value)}/>
 									</div>
 									<div style={{ flex: 1, display: "flex", flexDirection: "column", gap: "8px" }}>
 										<label style={{ fontSize: "0.9rem", color: "#f87171" }}>反方队伍</label>
-										<input className="glass-input" placeholder="输入反方队名" style={{ width: "100%", boxSizing: "border-box" }} />
+										<input className="glass-input" placeholder="输入反方队名" style={{ width: "100%", boxSizing: "border-box" }} onChange={(e) => setRightName(e.target.value)}/>
 									</div>
 								</div>
 
@@ -156,7 +159,7 @@ const MatchCard = forwardRef<HTMLDivElement, MatchCardProps>(
 											cursor: (m.stages && m.stages.length > 0) ? "pointer" : "not-allowed"
 										}}
 										onClick={() => {
-											if (m.stages && m.stages.length > 0) onStartMatch();
+											if (m.stages && m.stages.length > 0) onStartMatch(title, leftName, rightName);
 											else {
 												if (onError) onError("该赛制没有任何环节，无法启动比赛！");
 											};

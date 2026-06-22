@@ -7,6 +7,7 @@ interface TimerProps {
 	title?: string; //timer title
 	initialSeconds: number;
 	isRunning: boolean;
+	isHost: boolean;
 	onStart: () => void;
 	onPause: () => void;
 }
@@ -15,6 +16,7 @@ export default function Timer({
 	title,
 	initialSeconds,
 	isRunning,
+	isHost,
 	onStart,
 	onPause
 }: TimerProps) {
@@ -91,18 +93,20 @@ export default function Timer({
 				</svg>
 			</div>
 
-			{/* controls */}
-			<div style={{ display: "flex", gap: "0.5rem", justifyContent: "center", marginTop: "1.5rem" }}>
-				<button className="btn" onClick={onStart} disabled={isRunning || timeLeft === 0}>
-					开始
-				</button>
-				<button className="btn" onClick={onPause} disabled={!isRunning}>
-					暂停
-				</button>
-				<button className="btn" onClick={handleReset}>
-					重置
-				</button>
-			</div>
+			{isHost && 
+			// controls
+				<div style={{ display: "flex", gap: "0.5rem", justifyContent: "center", marginTop: "1.5rem" }}>
+					<button className="btn" onClick={onStart} disabled={isRunning || timeLeft === 0}>
+						开始
+					</button>
+					<button className="btn" onClick={onPause} disabled={!isRunning}>
+						暂停
+					</button>
+					<button className="btn" onClick={handleReset}>
+						重置
+					</button>
+				</div>
+			}
 		</div>
 	)
 }

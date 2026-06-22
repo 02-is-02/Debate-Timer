@@ -1,10 +1,17 @@
 // Learn more about Tauri commands at https://tauri.app/develop/calling-rust/
-use std::path::PathBuf;
+use std::{path::PathBuf, sync::Mutex};
+use iroh::EndpointAddr;
 use tauri_plugin_fs::FsExt;
 use serde::{Deserialize, Serialize};
 use base64::prelude::*;
-use crate::models::{DebateStages};
+use tokio::sync::broadcast;
+use crate::{host::start_host_server, models::DebateStages};
+mod host;
 mod models;
+
+pub struct HostState {
+	pub sender: Mutex<Option<broadcast::Sender<String>>>
+}
 
 #[derive(Serialize)]
 struct GoogleSearch {}
@@ -348,13 +355,58 @@ async fn allow_custom_path(app: tauri::AppHandle, path: String) -> Result<(), St
 	Ok(())
 }
 
+#[tauri::command]
+async fn create_host_room(
+	match_id: String,
+	match_json_str: String,
+	host_state: tauri::State<'_, HostState>,
+) -> Result<EndpointAddr, String> {
+	let manager = start_host_server(&match_id, &match_json_str)
+		.await
+		.map_err(|e| format!("启动节点失败: {}", e))?;
+
+	let mut lock = host_state.sender.lock().unwrap();
+	*lock = Some(manager.tx);
+
+	Ok(manager.ticket)
+}
+
+#[tauri::command]
+fn broadcast_packet(
+	raw_json_str: String,
+	host_state: tauri::State<'_, HostState>,
+) -> Result<(), String> {
+	let lock = host_state.sender.lock().unwrap();
+
+	if let Some(tx) = &*lock {
+		let mut packet = raw_json_str;
+		
+		if !packet.ends_with('\n') {
+			packet.push('\n');
+		}
+
+		let _ = tx.send(packet);
+		Ok(())
+	} else {
+		Err("房间主机未启动".to_string())
+	}
+}
+
 #[cfg_attr(mobile, tauri::mobile_entry_point)]
 pub fn run() {
 	tauri::Builder::default()
 		.plugin(tauri_plugin_dialog::init())
 		.plugin(tauri_plugin_fs::init())
 		.plugin(tauri_plugin_opener::init())
-		.invoke_handler(tauri::generate_handler![generate_stage, allow_custom_path])
+		.manage(HostState {
+			sender: Mutex::new(None)
+		})
+		.invoke_handler(tauri::generate_handler![
+			generate_stage, 
+			allow_custom_path,
+			create_host_room,
+			broadcast_packet
+		])
 		.run(tauri::generate_context!())
 		.expect("error while running tauri application");
 }

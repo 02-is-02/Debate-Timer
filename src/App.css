@@ -24,6 +24,14 @@ html, body {
 	box-sizing: border-box; 
 }
 
+button:focus {
+	outline: none;
+}
+
+button:focus-visible {
+	outline: none;
+}
+
 body {
 	-webkit-user-select: none;
 	user-select: none;
@@ -404,6 +412,13 @@ textarea,
 	width: 60%;
 }
 
+.settings-group.long {
+	flex-direction: row;
+	align-items: center;
+	justify-content: space-between;
+	width: 100%;
+}
+
 .settings-group .mini-label {
 	padding-left: 0;
 }
@@ -528,6 +543,26 @@ textarea,
 	transform: translateY(-2px);
 	box-shadow: 0 6px 20px rgba(37, 99, 235, 0.6);
 }
+
+.btn-secondary {
+	margin-top: 2rem;
+	background: none;
+	color: white;
+	border: 1px solid var(--alt-blue);
+	padding: 16px;
+	border-radius: 12px;
+	font-size: 1.2rem;
+	font-weight: bold;
+	cursor: pointer;
+	transition: transform 0.2s, color 0.2s, border 0.2s ease;
+}
+
+.btn-secondary:hover {
+	transform: translateY(1px);
+	color: gray;
+	border-color: var(--sec-blue);
+}
+
 .hide-scrollbar {
 	scrollbar-width: none;
 }

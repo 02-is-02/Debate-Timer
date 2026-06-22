@@ -2,7 +2,7 @@ import { useState, useEffect, useRef } from "react";
 import Timer from "../components/Timer";
 import { DebateStage } from "../schema";
 import * as configManager from "../utils/configManager";
-import { ChevronLeft, ChevronRight } from "lucide-react";
+import { ChevronLeft, ChevronRight, Plus } from "lucide-react";
 import MatchCard from "../components/MatchCard";
 import { Maximize, Minimize } from "lucide-react";
 import { useToast } from "../utils/Context";
@@ -10,15 +10,19 @@ import { useLayoutContext } from "../components/Layout";
 
 function Runner() {
 	const [isFullScreen, setIsFullscreen] = useState(false);
-	const [isPlaying, setIsPlaying] = useState(false);
 	const [currIndex, setCurrIndex] = useState(0);
 	const [activeSide, setActiveSide] = useState<"left" | "right" | "none">("none");
 	const [resetKey, setResetKey] = useState(0);
 	const [matches, setMatches] = useState<any[]>([]);
 	const [selectedId, setSelectedId] = useState("");
+	const [title, setTitle] = useState("");
+	const [leftName, setLeftName] = useState("");
+	const [rightName, setRightName] = useState("");
+
+	const [isHost, setIsHost] = useState(false);
 
 	const { showToast } = useToast();
-	const { setAllowDndWindow } = useLayoutContext();
+	const { setAllowDndWindow, isRunning: isPlaying, setIsRunning: setIsPlaying } = useLayoutContext()
 
 	const fullScreenContainer = useRef<HTMLDivElement>(null);
 	const scrollContainer = useRef<HTMLDivElement>(null);
@@ -64,6 +68,19 @@ function Runner() {
 		}, 10);
 	};
 
+	const handleJoin = () => {
+		setIsHost(false);
+		setIsPlaying(true);
+	}
+
+	const handleStart = (title: string, leftN: string, rightN:string) => {
+		setTitle(title);
+		setLeftName(leftN);
+		setRightName(rightN);
+		setIsHost(true);
+		setIsPlaying(true);
+	}
+
 	const handleNext = () => {
 		if (!isLastPage) setCurrIndex((prev) => prev + 1);
 		setActiveSide("none");
@@ -82,6 +99,7 @@ function Runner() {
 		if (document.fullscreenElement) {
 			document.exitFullscreen();
 		}
+		setIsHost(false);
 	};
 
 	const toggleFullScreen = async () => {
@@ -133,6 +151,7 @@ function Runner() {
 
 	useEffect(() => {
 	const handleKeyDown  = (e: KeyboardEvent) => {
+		if (!isHost) return;
 		if (e.repeat) return;
 		if (e.ctrlKey || e.altKey || e.metaKey) return;
 
@@ -203,6 +222,7 @@ function Runner() {
 							title={currStage.title}
 							initialSeconds={currStage.timeLimit}
 							isRunning={activeSide === "left"}
+							isHost={isHost}
 							onStart={() => setActiveSide("left")}
 							onPause={() => setActiveSide("none")}
 						/>
@@ -217,6 +237,7 @@ function Runner() {
 							title="正方" 
 							initialSeconds={currStage.leftTimeLimit} 
 							isRunning={activeSide === "left"}
+							isHost={isHost}
 							onStart={() => setActiveSide("left")}
 							onPause={() => setActiveSide("none")}
 						/>
@@ -225,6 +246,7 @@ function Runner() {
 							title="反方" 
 							initialSeconds={currStage.rightTimeLimit} 
 							isRunning={activeSide === "right"}
+							isHost={isHost}
 							onStart={() => setActiveSide("right")}
 							onPause={() => setActiveSide("none")}
 						/>
@@ -240,6 +262,7 @@ function Runner() {
 							title="正方" 
 							initialSeconds={currStage.leftTimeLimit} 
 							isRunning={activeSide === "left"}
+							isHost={isHost}
 							onStart={() => setActiveSide("left")}
 							onPause={() => setActiveSide("none")}
 						/>
@@ -248,6 +271,7 @@ function Runner() {
 							title="反方" 
 							initialSeconds={currStage.rightTimeLimit} 
 							isRunning={activeSide === "right"}
+							isHost={isHost}
 							onStart={() => setActiveSide("right")}
 							onPause={() => setActiveSide("none")}
 						/>
@@ -283,12 +307,24 @@ function Runner() {
 						scrollPaddingTop: "20px"
 					}}
 				>
-					<h1 style={{
-						color: "white"
-					}}>
-						赛制选择
-					</h1>
-					<div style={{ display: "flex", flexDirection: "column", gap: "16px", maxWidth: "1200px", margin: "36px auto" }}>
+					<div style={{ margin: "0 auto 24px auto", display: "flex", justifyContent: "space-between", alignItems: "center" }}>
+						<h1 style={{
+							color: "white",
+							margin: 0, 
+							fontSize: "2rem"
+						}}>
+							赛制选择
+						</h1>
+						<button 
+							className="btn-secondary" 
+							onClick={handleJoin}
+							style={{ padding: "10px 20px", display: "flex", alignItems: "center", gap: "8px", fontSize: "1rem" }}
+						>
+							<Plus size={20} strokeWidth={2.5} /> 加入房间
+						</button>
+					</div>
+					
+					<div style={{ display: "flex", flexDirection: "column", gap: "16px", maxWidth: "1200px", margin: "0 auto" }}>
 						{matches.map((m, index) => (
 							<MatchCard 
 								key={m.id}
@@ -296,7 +332,7 @@ function Runner() {
 								m={m}
 								isExpanded={selectedId === m.id}
 								onToggle={() => handleSelectMatch(m.id, index)}
-								onStartMatch={() => setIsPlaying(true)}
+								onStartMatch={handleStart}
 								onError={(msg: string) => showToast(msg, 'error')}
 							/>
 						))}
@@ -335,46 +371,54 @@ function Runner() {
 					当前环节 {stages.length > 0 ? currIndex + 1 : 0} / {stages.length} : {currStage?.title || "暂无环节"}
 				</h3>
 
+				<div style={{ display: "flex", flexDirection: "row", width: "100%", justifyContent: "space-between"}}>
+					<h2 style={{ margin: 0, color: "white" }}>{leftName}</h2>
+					<h2 style={{ margin: 0, color: "white" }}>{rightName}</h2>
+				</div>
+
 				{/* render current stage */}
-				<div style={{ flex: 1, display: "flex", justifyContent: "center", alignItems: "center"}}>
+				<div style={{ flex: 1, display: "flex", flexDirection: "column", justifyContent: "center", alignItems: "center"}}>
+					<h1 style={{ margin: 0, color: "white" }}>{title}</h1>
 					{renderCurrStage()}
 				</div>
 
-				{/* bottom nav bar */}
-				<div style={{
-					display: "flex", 
-					justifyContent: "space-between", 
-					alignItems: "center",
-					marginTop: "2rem", 
-					paddingTop: "1rem"}}>
-					<div style={{flex: 1, display: "flex", justifyContent: "left", gap: "1rem"}}>
-						<button className="btn" onClick={handlePrev} disabled={isFirstPage}>
-							<ChevronLeft size={20} /> 上一环节
-						</button>
-					</div>
-					<div style={{flex: 3, display: "flex", justifyContent: "center", gap: "1rem"}}>
-						{currStage?.type === 'free' && (
-							<button className="btn" onClick={() => setActiveSide(activeSide === "none" ? (currStage.start || "left") : (activeSide === "left" ? "right" : "left"))}>
-								{bText}
+				{isHost && 
+					// bottom nav bar
+					<div style={{
+						display: "flex", 
+						justifyContent: "space-between", 
+						alignItems: "center",
+						marginTop: "2rem", 
+						paddingTop: "1rem"}}>
+						<div style={{flex: 1, display: "flex", justifyContent: "left", gap: "1rem"}}>
+							<button className="btn" onClick={handlePrev} disabled={isFirstPage}>
+								<ChevronLeft size={20} /> 上一环节
 							</button>
-						)}
-						
-						<button className="btn" onClick={handleExit}>
-							退出比赛
-						</button>
+						</div>
+						<div style={{flex: 3, display: "flex", justifyContent: "center", gap: "1rem"}}>
+							{currStage?.type === 'free' && (
+								<button className="btn" onClick={() => setActiveSide(activeSide === "none" ? (currStage.start || "left") : (activeSide === "left" ? "right" : "left"))}>
+									{bText}
+								</button>
+							)}
+							
+							<button className="btn" onClick={handleExit}>
+								退出比赛
+							</button>
 
-						{currStage?.type === 'free' && (
-							<button className="btn" onClick={() => { setActiveSide("none"); setResetKey((prev) => prev + 1); }}>
-								全局重置
+							{currStage?.type === 'free' && (
+								<button className="btn" onClick={() => { setActiveSide("none"); setResetKey((prev) => prev + 1); }}>
+									全局重置
+								</button>
+							)}
+						</div>
+						<div style={{flex: 1, display: "flex", justifyContent: "right", gap: "1rem"}}>
+							<button className="btn" onClick={handleNext} disabled={isLastPage}>
+								下一环节 <ChevronRight size={20} />
 							</button>
-						)}
+						</div>
 					</div>
-					<div style={{flex: 1, display: "flex", justifyContent: "right", gap: "1rem"}}>
-						<button className="btn" onClick={handleNext} disabled={isLastPage}>
-							下一环节 <ChevronRight size={20} />
-						</button>
-					</div>
-				</div>
+				}
 			</div>
 		</div>
 	);

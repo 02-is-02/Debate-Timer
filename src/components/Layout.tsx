@@ -59,7 +59,11 @@ const darkTheme = createTheme({
 	}
 })
 
-export type LayoutContextType = { setAllowDndWindow: React.Dispatch<React.SetStateAction<boolean>> }
+export type LayoutContextType = { 
+	setAllowDndWindow: React.Dispatch<React.SetStateAction<boolean>>;
+	isRunning: boolean;
+	setIsRunning: React.Dispatch<React.SetStateAction<boolean>>;
+}
 
 function GlobalDropCatcher({ allowDndWindow }: { allowDndWindow: boolean }) {
 	const navigate = useNavigate();
@@ -83,6 +87,7 @@ export default function Layout() {
 		return localStorage.getItem("sidebar_folded") === "true";
 	});
 	const [allowDndWindow, setAllowDndWindow] = useState(true);
+	const [isRunning, setIsRunning] = useState(false);
 
 	const currPage = useLocation().pathname;
 
@@ -96,9 +101,9 @@ export default function Layout() {
 				<GlobalDropCatcher allowDndWindow={allowDndWindow} />
 
 				<div className="main-container">
-					<MenuSidebar isFolded={isFolded} toggleFold={() => setIsFolded(!isFolded)} activeRow={currPage}/>
+					{!isRunning && <MenuSidebar isFolded={isFolded} toggleFold={() => setIsFolded(!isFolded)} activeRow={currPage}/>}
 					<div style={{ flex: 1, minWidth: 0, position: "relative" }}>
-						<Outlet context={{setAllowDndWindow}}/>
+						<Outlet context={{setAllowDndWindow, isRunning, setIsRunning}}/>
 					</div>
 				</div>
 			</ToastProvider>

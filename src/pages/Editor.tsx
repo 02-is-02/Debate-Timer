@@ -209,7 +209,7 @@ export default function Editor() {
 				}}
 			>
 				<NewMatchConfig isActive={isCreating} toggleActive={handleToggleConfig} onCreate={(matchData) => handleAddMatch(matchData)} />
-				<div style={{ maxWidth: "1000px", margin: "0 auto 24px auto", display: "flex", justifyContent: "space-between", alignItems: "center" }}>
+				<div style={{ margin: "0 auto 24px auto", display: "flex", justifyContent: "space-between", alignItems: "center" }}>
 					<h1 style={{ color: "white", margin: 0, fontSize: "2rem" }}>赛制库</h1>
 					<button 
 						className="btn-start-match" 
@@ -220,7 +220,7 @@ export default function Editor() {
 					</button>
 				</div>
 
-				<div style={{ display: "flex", flexDirection: "column", gap: "16px", maxWidth: "1000px", margin: "0 auto" }}>
+				<div style={{ display: "flex", flexDirection: "column", gap: "16px", margin: "0 auto" }}>
 					{matches.length === 0 && (
 						<div style={{ textAlign: "center", padding: "40px", color: "var(--alt-blue)" }}>还没有任何赛制，点击右上角新建一个吧！</div>
 					)}

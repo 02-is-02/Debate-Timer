@@ -1,7 +1,7 @@
-import { useState } from 'react';
-import { TextField, MenuItem, Select, Fab } from '@mui/material';
+import { useEffect, useRef, useState } from 'react';
+import { TextField, MenuItem, Select, Fab, Switch, CircularProgress } from '@mui/material';
 import { useToast } from '../utils/Context';
-import { RouteOff, Save } from 'lucide-react';
+import { RouteOff } from 'lucide-react';
 
 const PATH_STORAGE_KEY = 'debate_timer_save_dir';
 
@@ -10,16 +10,47 @@ export default function Settings() {
 	
 	const [apiKey, setApiKey] = useState(localStorage.getItem('gemini_api_key') || '');
 	const [model, setModel] = useState(localStorage.getItem('gemini_model') || 'Gemini 2.5 Flash');
+	const [autoCreateRoom, setAutoCreateRoom] = useState(localStorage.getItem('auto_create_room') === "true" || false)
 
-	const handleSave = () => {
-		localStorage.setItem('gemini_api_key', apiKey);
-		localStorage.setItem('gemini_model', model);
-		showToast("设置已保存", "success");
-	};
+	const [isSaving, setIsSaving] = useState(false);
+
+	const typingTimeRef = useRef<ReturnType<typeof setTimeout> | null>(null);
+
+	useEffect(() => {
+		const savedKey = localStorage.getItem('gemini_api_key') || '';
+		const savedModel = localStorage.getItem('gemini_model') || 'Gemini 2.5 Flash';
+		const savedAuto = localStorage.getItem('auto_create_room') === "true";
+
+		if (apiKey === savedKey && model === savedModel && autoCreateRoom === savedAuto) {
+			return;
+		}
+
+		setIsSaving(true);
+		if (typingTimeRef.current) clearTimeout(typingTimeRef.current);
+
+		typingTimeRef.current = setTimeout(() => {
+			try {
+				localStorage.setItem('gemini_api_key', apiKey);
+				localStorage.setItem('gemini_model', model);
+				localStorage.setItem('auto_create_room', autoCreateRoom.toString());
+
+				showToast("设置已保存", "success");
+			} catch (error) {
+				console.log("Failed to save settings: ", error);
+				showToast(`设置保存发生错误:\n${error}`, 'error');
+			} finally {
+				setIsSaving(false);
+			}
+		}, 1500);
+
+		return () => {
+			if (typingTimeRef.current) clearTimeout(typingTimeRef.current);
+		};
+	}, [apiKey, model, autoCreateRoom]);
 
 	const handleResetPath = () => {
 		localStorage.setItem(PATH_STORAGE_KEY, "")
-	}
+	};
 
 	const renderDivider = ( title: string) => {
 		return (
@@ -32,13 +63,33 @@ export default function Settings() {
 				</h3>
 			</div>
 		)
-	}
+	};
+
+	useEffect(() => {
+		return () => {
+			if (typingTimeRef.current) clearTimeout(typingTimeRef.current);
+
+			if (isSaving) {
+				localStorage.setItem('gemini_api_key', apiKey);
+				localStorage.setItem('gemini_model', model);
+				localStorage.setItem('auto_create_room', autoCreateRoom.toString());
+			}
+		};
+	}, []);
 
 	return (
-		<div style={{ flex: 1 }} className="settings-container">
-			<h1 style={{ color: "white" }}>
-				设置
-			</h1>
+		<div style={{ flex: 1 }} className="settings-container hide-scrollbar">
+			<div style={{ alignItems: "baseline" }} className="settings-group long">
+				<h1 style={{ color: "white" }}>
+					设置
+				</h1>
+				<label className="mini-label">
+					{isSaving && (
+						<CircularProgress size={10}/>
+					)}
+					{isSaving ? "正在保存，请勿关闭页面" : "已保存"}
+				</label>
+			</div>
 			{renderDivider("AI生成相关")}
 			<div className="settings-group">
 				<label className="mini-label">
@@ -71,18 +122,26 @@ export default function Settings() {
 				</Select>
 			</div>
 			{renderDivider("存储相关")}
-			<div className="settings-group">
+			<div className="settings-group long">
 				<label className="mini-label">
 					点击重置默认存储路径：
 				</label>
-				<Fab sx={{ margin: "0 auto 0 0", padding: "15px", gap: "10px" }}size="small" color="error" variant="extended" aria-label="reset" onClick={handleResetPath}>
+				<Fab sx={{ margin: "0", padding: "15px", gap: "10px" }}size="small" color="error" variant="extended" aria-label="reset" onClick={handleResetPath}>
 					<RouteOff/>重置
 				</Fab>
 			</div>
 
-			<Fab sx={{ right: "5%", bottom: "5%", position: "fixed" }} color="primary" aria-label="save" onClick={handleSave}>
-				<Save/>
-			</Fab>
+			{renderDivider("房间设置")}
+			<div className="settings-group long">
+				<label className="mini-label">
+					开始计时自动创建房间：
+				</label>
+				<Switch
+					size="small"
+					checked={autoCreateRoom}
+					onChange={(e) => setAutoCreateRoom(e.target.checked)}
+				/>
+			</div>
 		</div>
 	);
 }
