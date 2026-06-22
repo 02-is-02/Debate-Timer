@@ -10,7 +10,6 @@ import { useLayoutContext } from "../components/Layout";
 
 function Runner() {
 	const [isFullScreen, setIsFullscreen] = useState(false);
-	const [isPlaying, setIsPlaying] = useState(false);
 	const [currIndex, setCurrIndex] = useState(0);
 	const [activeSide, setActiveSide] = useState<"left" | "right" | "none">("none");
 	const [resetKey, setResetKey] = useState(0);
@@ -18,7 +17,7 @@ function Runner() {
 	const [selectedId, setSelectedId] = useState("");
 
 	const { showToast } = useToast();
-	const { setAllowDndWindow } = useLayoutContext();
+	const { setAllowDndWindow, isRunning: isPlaying, setIsRunning: setIsPlaying } = useLayoutContext()
 
 	const fullScreenContainer = useRef<HTMLDivElement>(null);
 	const scrollContainer = useRef<HTMLDivElement>(null);
