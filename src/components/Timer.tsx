@@ -25,31 +25,32 @@ export default function Timer({
 	const [tick, { stop: stopTick }] = useSound(tickSfx, { volume: 0.5 });
 
 	useEffect(() => {
-		if (!isRunning) {
-			stopTick();
-		}
+		if (!isRunning) stopTick();
 	}, [isRunning, stopTick])
 
 	useEffect(() => {
-		let timerId: number;
+		if (!isRunning) return;
 
-		if (isRunning && timeLeft > 0) {
-			timerId = window.setInterval(() => {
-				const nextTime = timeLeft - 1;
+		const timerId = window.setInterval(() => {
+			setTimeLeft((prevSeconds) => {
+				if (prevSeconds <= 0) return 0;
+				const nextTime = prevSeconds - 1;
 				if (nextTime === 30) {
 					bell();
-				} else if ( nextTime === 5 ) {
+				} else if (nextTime === 5) {
 					tick();
-				} else if ( nextTime === 0 ) {
-					stopTick()
+				} else if (nextTime === 0) {
+					stopTick();
 					bell();
 					setTimeout(() => bell(), 500);
 				}
-				setTimeLeft(nextTime);
-			}, 1000)
-		}
-		return () => clearInterval(timerId) 
-	}, [isRunning, timeLeft]);
+				return nextTime;
+			});
+		}, 1000);
+
+		return () => clearInterval(timerId);
+
+	}, [isRunning]);
 
 	const formatTime = (secs: number) => {
 		const m = Math.floor(secs/60);
@@ -64,21 +65,36 @@ export default function Timer({
 
 	return (
 		<div style={{
-			padding: "1.5rem", 
-			textAlign: "center",
-			margin: "1rem"
+			width: "100%",
+			height: "100%",
+			display: "flex",
+			flexDirection: "column",
+			justifyContent: "center",
+			alignItems: "center",
+			boxSizing: "border-box",
+			padding: "1vh 0" 
 		}}>
-			{/* title */}
-			{title && <h2 style={{ color: "white", margin: "0 0 1rem 0"}}>{title}</h2>}
+			{title && (
+				<h2 style={{ 
+					color: "white", 
+					margin: "0 0 1.5vh 0", 
+					fontSize: "clamp(2.0rem, 2.5vh, 3.7rem)",
+					fontWeight: 600
+				}}>
+					{title}
+				</h2>
+			)}
 
-			{/* timer */}
+			{/* SVG Timer  */}
 			<div style={{
-					width: "100%", 
-					maxWidth: "300px", 
-					margin: "0 auto"
-				}}
-			>
-				<svg viewBox="0 0 100 30" style={{width: "100%", height: "auto"}}>
+				width: "100%", 
+				flex: 1,
+				display: "flex",
+				justifyContent: "center",
+				alignItems: "center",
+				maxHeight: "45vh",
+			}}>
+				<svg viewBox="0 0 100 30" style={{ width: "100%", height: "auto" }}>
 					<text 
 						x="50%" 
 						y="50%" 
@@ -86,16 +102,16 @@ export default function Timer({
 						textAnchor="middle" 
 						fontSize={24} 
 						fontWeight="bold" 
-						fill={timeLeft <= 30 ? "red" : "white"}
+						fill={timeLeft <= 30 ? "#ef4444" : "white"}
 					>
 						{formatTime(timeLeft)}
 					</text>
 				</svg>
 			</div>
 
-			{isHost && 
-			// controls
-				<div style={{ display: "flex", gap: "0.5rem", justifyContent: "center", marginTop: "1.5rem" }}>
+			{/* Controls */}
+			{isHost && (
+				<div style={{ display: "flex", gap: "0.75rem", justifyContent: "center", marginTop: "2vh" }}>
 					<button className="btn" onClick={onStart} disabled={isRunning || timeLeft === 0}>
 						开始
 					</button>
@@ -106,7 +122,7 @@ export default function Timer({
 						重置
 					</button>
 				</div>
-			}
+			)}
 		</div>
 	)
 }

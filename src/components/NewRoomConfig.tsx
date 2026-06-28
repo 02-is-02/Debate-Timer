@@ -1,5 +1,5 @@
 import { LoadingButton } from "@mui/lab";
-import { TextField, Box, Stack, Chip, Button } from "@mui/material";
+import { Button } from "@mui/material";
 import { invoke } from "@tauri-apps/api/core";
 import { useToast } from "../utils/Context";
 import { useState } from "react";
@@ -43,7 +43,7 @@ export default function ({ isActive, toggleActive }: NewRoomConfigProps) {
 
 	const handleSelectAndJoinRoom = async (room: RemoteRoom) => {
 		try {
-			showToast(`已成功顺着 Iroh 管道直连房间: ${room.match_id}`, "success");
+			showToast(`已连接: ${room.match_id}`, "success");
 		} catch (e) {
 			showToast(`连线失败: ${e}`, "error");
 		}
@@ -58,7 +58,31 @@ export default function ({ isActive, toggleActive }: NewRoomConfigProps) {
 			<div className={`config-window ${isActive ? "active" : ""}`} style={{ display: "flex", flexDirection: "column", gap: "20px" }}>
 				<h2 style={{ fontSize: "2rem", margin: "0", color: "white", flexShrink: 0 }}>新建赛制</h2>
 				
-				
+				{remoteRooms.length === 0 ? (
+					<p className="mini-label">
+						暂无活跃开赛的房间
+					</p>
+				) : (
+					<div style={{ display: "flex", flexDirection: "column", gap: "10px" }}>
+						{remoteRooms.map((room) => (
+							<div 
+								key={room.match_id}
+								onClick={() => handleSelectAndJoinRoom(room)}
+								className="stage-card"
+							>
+								<div>
+									<div style={{ color: "white", fontWeight: "bold" }}>{room.config.title}</div>
+									<div className="mini-label">
+										房间号: {room.match_id} | 环节数: {room.config.stages?.length || 0}
+									</div>
+								</div>
+								<button className="btn-secondary" style={{ fontSize: "0.85rem", padding: "6px 12px" }}>
+									加入
+								</button>
+							</div>
+						))}
+					</div>
+				)}
 
 				<div
 					style={{
@@ -77,7 +101,7 @@ export default function ({ isActive, toggleActive }: NewRoomConfigProps) {
 						取消
 					</Button>
 					<LoadingButton
-						onClick={() => handleConnect()}
+						
 						loading={isConnecting}
 						variant="contained" 
 						sx={{ 

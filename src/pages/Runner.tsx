@@ -18,7 +18,7 @@ function Runner() {
 	const [title, setTitle] = useState("");
 	const [leftName, setLeftName] = useState("");
 	const [rightName, setRightName] = useState("");
-
+	const [stageZoom, setStageZoom] = useState(1);
 	const [isHost, setIsHost] = useState(false);
 
 	const { showToast } = useToast();
@@ -69,8 +69,9 @@ function Runner() {
 	};
 
 	const handleJoin = () => {
-		setIsHost(false);
-		setIsPlaying(true);
+		showToast("未完成", "info");
+		// setIsHost(false);
+		// setIsPlaying(true);
 	}
 
 	const handleStart = (title: string, leftN: string, rightN:string) => {
@@ -211,12 +212,36 @@ function Runner() {
 	};
 	}, [handlePrev, handleNext, handleExit, setActiveSide, isFirstPage, isLastPage, currStage, activeSide]);
 
+	useEffect(() => {
+		if (!isPlaying) return;
+		const handleProjectorZoom = () => {
+			const DESIGN_WIDTH = 1280;
+			const DESIGN_HEIGHT = 720;
+
+			const clientW = window.innerWidth;
+			const clientH = window.innerHeight;
+
+			const scaleW = clientW / DESIGN_WIDTH;
+			const scaleH = clientH / DESIGN_HEIGHT;
+
+			let ratio = Math.min(scaleH, scaleW);
+
+			ratio = Math.max(ratio, 0.5);
+
+			setStageZoom(ratio);
+		};
+
+		handleProjectorZoom()
+		window.addEventListener('resize', handleProjectorZoom);
+		return () => window.removeEventListener('resize', handleProjectorZoom);
+	}, [isPlaying]);
+
 	const renderCurrStage = () => {
 		if (!currStage) return null;
 		switch (currStage.type) {
 			case "single":
 				return (
-					<div style={{width: "400px"}}>
+					<div style={{width: "600px"}}>
 						<Timer
 							key={`single-${resetKey}`}
 							title={currStage.title}
@@ -229,34 +254,10 @@ function Runner() {
 					</div>
 				);
 			case "double":
-				return (
-					<div style={{ display: "flex", flexDirection: "column", alignItems: "center" }}>
-						<div style={{ display: "flex", gap: "2rem", width: "800px" }}>
-						<Timer 
-							key={`left-${resetKey}`}
-							title="正方" 
-							initialSeconds={currStage.leftTimeLimit} 
-							isRunning={activeSide === "left"}
-							isHost={isHost}
-							onStart={() => setActiveSide("left")}
-							onPause={() => setActiveSide("none")}
-						/>
-						<Timer 
-							key={`right-${resetKey}`}
-							title="反方" 
-							initialSeconds={currStage.rightTimeLimit} 
-							isRunning={activeSide === "right"}
-							isHost={isHost}
-							onStart={() => setActiveSide("right")}
-							onPause={() => setActiveSide("none")}
-						/>
-						</div>
-					</div>
-				);
 			case "free":
 				return (
 					<div style={{ display: "flex", flexDirection: "column", alignItems: "center" }}>
-						<div style={{ display: "flex", gap: "2rem", width: "800px" }}>
+						<div style={{ display: "flex", gap: "2rem", width: "1000px" }}>
 						<Timer 
 							key={`left-${resetKey}`}
 							title="正方" 
@@ -354,6 +355,7 @@ function Runner() {
 					position: "absolute",
 					top: "24px",
 					right: "30px",
+					zIndex: 9999,
 					"--btn-theme": "var(--alt-blue)"
 				} as React.CSSProperties }
 				onClick={toggleFullScreen}
@@ -361,7 +363,16 @@ function Runner() {
 			>
 				{isFullScreen ? <Minimize size={20} /> : <Maximize size={20} />}
 			</button>
-			<div style={{ display: "flex", flexDirection: "column", minHeight: "100vh", width: "100%", padding: "1rem", boxSizing: "border-box" }}>
+			<div style={{
+				zoom: stageZoom,
+				width: "1280px", 
+				height: "720px", 
+				display: "flex", 
+				flexDirection: "column", 
+				padding: "32px 40px", 
+				boxSizing: "border-box"
+				}}
+			>
 				{/* stage indicator */}
 				<h3 style={{ 
 					textAlign: "center", 
@@ -378,7 +389,7 @@ function Runner() {
 
 				{/* render current stage */}
 				<div style={{ flex: 1, display: "flex", flexDirection: "column", justifyContent: "center", alignItems: "center"}}>
-					<h1 style={{ margin: 0, color: "white" }}>{title}</h1>
+					<h1 style={{ fontSize: "clamp(3rem, 10vh, 3.8rem)", margin: "0 0 8vh 0", color: "white" }}>{title}</h1>
 					{renderCurrStage()}
 				</div>
 
