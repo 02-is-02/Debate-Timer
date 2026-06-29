@@ -4,6 +4,7 @@ import { invoke } from "@tauri-apps/api/core";
 import { useToast } from "../utils/Context";
 import { useState, useEffect } from "react";
 import { RefreshCw } from "lucide-react";
+import { DebateStages } from "../schema";
 
 interface RemoteRoom {
 	match_id: string;
@@ -12,7 +13,7 @@ interface RemoteRoom {
 		title: string;
 		leftName: string;
 		rightName: string;
-		stages: any[];
+		stages: DebateStages;
 	};
 }
 
@@ -41,7 +42,7 @@ export default function JoinRoomConfig({ isActive, toggleActive, onJoinSuccess }
 	const fetchActiveRooms = async () => {
 		setIsLoadingRooms(true);
 		try {
-			const list: RemoteRoom[] = await invoke("list_remote_rooms");
+			const list: RemoteRoom[] = await invoke('list_remote_rooms', {});
 			setRemoteRooms(list);
 		} catch (e) {
 			showToast(`拉取大厅失败: ${e}`, "error");
@@ -105,6 +106,7 @@ export default function JoinRoomConfig({ isActive, toggleActive, onJoinSuccess }
 										className="stage-card"
 										style={{ 
 											cursor: "pointer",
+											padding: "10px 20px",
 											border: isSelected ? "1px solid var(--std-blue)" : "1px solid transparent",
 											background: isSelected ? "rgba(59, 130, 246, 0.1)" : undefined
 										}}
@@ -112,7 +114,7 @@ export default function JoinRoomConfig({ isActive, toggleActive, onJoinSuccess }
 										<div style={{ width: "100%" }}>
 											<div style={{ color: "white", fontWeight: "bold", display: "flex", justifyContent: "space-between" }}>
 												<span>{room.config.title || "未命名赛制"}</span>
-												<span style={{ fontSize: "0.8rem", color: "var(--std-blue)" }}>{room.config.stages?.length || 0} 环节</span>
+												<span style={{ fontSize: "0.8rem", color: "var(--std-blue)" }}>{room.config.stages?.stages.length || 0} 环节</span>
 											</div>
 											<div className="mini-label" style={{ marginTop: "4px" }}>
 												房间号: {room.match_id} | {room.config.leftName} VS {room.config.rightName}

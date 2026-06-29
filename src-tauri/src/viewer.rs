@@ -20,7 +20,7 @@ pub async fn list_remote_rooms() -> Result<Vec<RemoteRoomInfo>, String> {
 	let rest_token = std::env!("UPSTASH_REDIS_REST_TOKEN");
 	let client = Client::new();
 
-	let keys_url = format!("{}/keys/debate:room:M-*", rest_url);
+	let keys_url = format!("{}/keys/debate:room:R-*", rest_url);
 	let keys_res = client.get(&keys_url)
 		.bearer_auth(rest_token)
 		.send()
@@ -35,10 +35,17 @@ pub async fn list_remote_rooms() -> Result<Vec<RemoteRoomInfo>, String> {
 		return Ok(vec![]);
 	}
 
-	let mget_url = format!("{}/mget", rest_url);
-	let mget_res: Value = client.post(&mget_url)
+	let mut mget_command = vec!["MGET".to_string()];
+	for k in keys.unwrap() {
+		if let Some(key_str) = k.as_str() {
+			mget_command.push(key_str.to_string());
+		}
+	}
+
+	let mget_url = rest_url.trim_end_matches('/');
+	let mget_res: Value = client.post(mget_url)
 		.bearer_auth(rest_token)
-		.json(keys.unwrap())
+		.json(&mget_command)
 		.send().await.map_err(|e| format!("MGET请求失败：{}", e))?
 		.json().await.map_err(|e| format!("解析 JSON 失败: {}", e))?;
 
