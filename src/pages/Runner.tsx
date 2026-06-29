@@ -7,6 +7,10 @@ import MatchCard from "../components/MatchCard";
 import { Maximize, Minimize } from "lucide-react";
 import { useToast } from "../utils/Context";
 import { useLayoutContext } from "../components/Layout";
+import { invoke } from "@tauri-apps/api/core";
+import { getCurrentWindow } from "@tauri-apps/api/window";
+import { UnlistenFn } from "@tauri-apps/api/event";
+import JoinRoomConfig from "../components/JoinRoomConfig";
 
 function Runner() {
 	const [isFullScreen, setIsFullscreen] = useState(false);
@@ -15,6 +19,7 @@ function Runner() {
 	const [resetKey, setResetKey] = useState(0);
 	const [matches, setMatches] = useState<any[]>([]);
 	const [selectedId, setSelectedId] = useState("");
+	const [showJoin, setShowJoin] = useState(false)
 	const [title, setTitle] = useState("");
 	const [leftName, setLeftName] = useState("");
 	const [rightName, setRightName] = useState("");
@@ -68,10 +73,16 @@ function Runner() {
 		}, 10);
 	};
 
-	const handleJoin = () => {
-		showToast("未完成", "info");
-		// setIsHost(false);
-		// setIsPlaying(true);
+	const handleJoin = (matchId: string, roomConfig: any) => {
+		setTitle(roomConfig.title);
+		setLeftName(roomConfig.leftName);
+		setRightName(roomConfig.rightName);
+
+		setMatches([roomConfig.match]); 
+    	setSelectedId(roomConfig.match.id);
+
+		setIsHost(false);
+		setIsPlaying(true);
 	}
 
 	const handleStart = (title: string, leftN: string, rightN:string) => {
@@ -94,11 +105,17 @@ function Runner() {
 		setResetKey((prev) => prev + 1);
 	};
 
-	const handleExit = () => {
+	const handleExit = async () => {
 		setIsPlaying(false);
 		setCurrIndex(0);
 		if (document.fullscreenElement) {
 			document.exitFullscreen();
+		}
+		try {
+			await invoke('close_host_room', { matchId: selectedId });
+			console.log("room closed");
+		}	catch (e) {
+			console.error("解散房间出错:", e);
 		}
 		setIsHost(false);
 	};
@@ -202,7 +219,7 @@ function Runner() {
 				if (currStage) setActiveSide('right');
 				break;
 			case 'F11':
-				toggleFullScreen;
+				toggleFullScreen();
 		}
 	};
 	window.addEventListener('keydown', handleKeyDown);
@@ -235,6 +252,36 @@ function Runner() {
 		window.addEventListener('resize', handleProjectorZoom);
 		return () => window.removeEventListener('resize', handleProjectorZoom);
 	}, [isPlaying]);
+
+	useEffect(() => {
+		let unlisten: UnlistenFn | undefined;
+
+		const setupWindowCloseInterceptor = async () => {
+		const appWindow = getCurrentWindow();
+		
+		unlisten = await appWindow.onCloseRequested(async (event) => {
+			if (isHost && selectedId) {
+			event.preventDefault();
+			try {
+				await invoke('close_host_room', { matchId: selectedId });
+			} catch (e) {
+				console.error(e);
+			}
+			await appWindow.destroy();
+			}
+		});
+		};
+
+		setupWindowCloseInterceptor();
+		return () => {
+			if (unlisten) {
+				unlisten();
+			}
+			if (isHost && selectedId) {
+				invoke('close_host_room', { matchId: selectedId }).catch(console.error);
+			}
+		};
+	}, [selectedId, isHost]);
 
 	const renderCurrStage = () => {
 		if (!currStage) return null;
@@ -318,7 +365,7 @@ function Runner() {
 						</h1>
 						<button 
 							className="btn-secondary" 
-							onClick={handleJoin}
+							onClick={() => setShowJoin(true)}
 							style={{ padding: "10px 20px", display: "flex", alignItems: "center", gap: "8px", fontSize: "1rem" }}
 						>
 							<Plus size={20} strokeWidth={2.5} /> 加入房间
@@ -339,6 +386,11 @@ function Runner() {
 						))}
 					</div>
 				</div>
+				<JoinRoomConfig 
+					isActive={showJoin} 
+					toggleActive={() => setShowJoin(false)}
+					onJoinSuccess={handleJoin}
+				/>
 			</div>
 		);
 	}

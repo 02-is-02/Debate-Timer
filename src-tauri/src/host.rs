@@ -34,7 +34,7 @@ pub async fn start_host_server(match_id: &str, match_json_str: &str) -> Result<H
 	});
 
 	let client = Client::new();
-	let set_url = format!("{}/set/ldebate:room:{}?EX=10800", rest_url, match_id);
+	let set_url = format!("{}/set/debate:room:{}?EX=36000", rest_url, match_id);
 	client.post(&set_url)
 		.bearer_auth(rest_token)
 		.json(&payload)
@@ -46,7 +46,7 @@ pub async fn start_host_server(match_id: &str, match_json_str: &str) -> Result<H
 	let endpoint_clone = endpoint.clone();
 
 	tokio::spawn(async move {
-		let alpn = b"apu-debate-v1";
+		let _alpn = b"apu-debate-v1";
 
 		while let Some(incoming) = endpoint_clone.accept().await {
 			let connecting = match incoming.accept() {
