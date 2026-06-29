@@ -1,12 +1,13 @@
 import { forwardRef, useState } from "react";
 import { DebateStage } from "../schema";
 import { ChevronDown, ChevronUp } from "lucide-react";
+import { Switch } from "@mui/material";
 
 interface MatchCardProps {
 	m: any;
 	isExpanded: boolean;
 	onToggle: () => void;
-	onStartMatch: (title: string, leftN: string, rightN: string) => void;
+	onStartMatch: (title: string, leftN: string, rightN: string, isCreatingRoom: boolean) => void;
 	onError?: (msg: string) => void;
 }
 
@@ -16,6 +17,7 @@ const MatchCard = forwardRef<HTMLDivElement, MatchCardProps>(
 		const [title, setTitle] = useState("");
 		const [leftName, setLeftName] = useState("");
 		const [rightName, setRightName] = useState("");
+		const [createRoom, setCreateRoom] = useState(localStorage.getItem("auto_create_room") === "true");
 
 		if (isExpanded && !shouldRender) {
 			setShouldRender(true);
@@ -148,18 +150,29 @@ const MatchCard = forwardRef<HTMLDivElement, MatchCardProps>(
 									</div>
 								</div>
 
-								<div style={{ marginTop: "auto", flexShrink: 0 }}>
+								
+
+								<div style={{ flexShrink: 0, marginTop: "auto" }}>
+									<div style={{ display: "flex", alignItems: "center" }}>
+										<label className="mini-label">是否创建线上房间:</label>
+										<Switch 
+										size="small"
+										checked={createRoom}
+										onChange={(e) => setCreateRoom(e.target.checked)}
+										/>
+									</div>
 									<button 
 										className="btn-start-match" 
 										style={{ 
 											width: "100%",
 											padding: "12px",
 											fontSize: "1.1rem",
+											marginTop: "2vh",
 											opacity: (m.stages && m.stages.length > 0) ? 1 : 0.5,
 											cursor: (m.stages && m.stages.length > 0) ? "pointer" : "not-allowed"
 										}}
 										onClick={() => {
-											if (m.stages && m.stages.length > 0) onStartMatch(title, leftName, rightName);
+											if (m.stages && m.stages.length > 0) onStartMatch(title, leftName, rightName, createRoom);
 											else {
 												if (onError) onError("该赛制没有任何环节，无法启动比赛！");
 											};

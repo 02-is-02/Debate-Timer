@@ -134,7 +134,7 @@ export default function Settings() {
 			{renderDivider("房间设置")}
 			<div className="settings-group long">
 				<label className="mini-label">
-					开始计时自动创建房间：
+					开启比赛默认创建房间：
 				</label>
 				<Switch
 					size="small"

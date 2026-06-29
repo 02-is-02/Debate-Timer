@@ -19,6 +19,7 @@ function Runner() {
 	const [resetKey, setResetKey] = useState(0);
 	const [matches, setMatches] = useState<any[]>([]);
 	const [selectedId, setSelectedId] = useState("");
+	const [activeRoomId, setActiveRoomId] = useState("");
 	const [showJoin, setShowJoin] = useState(false)
 	const [title, setTitle] = useState("");
 	const [leftName, setLeftName] = useState("");
@@ -73,19 +74,43 @@ function Runner() {
 		}, 10);
 	};
 
-	const handleJoin = (matchId: string, roomConfig: any) => {
+	const handleJoin = (roomConfig: any) => {
 		setTitle(roomConfig.title);
 		setLeftName(roomConfig.leftName);
 		setRightName(roomConfig.rightName);
 
 		setMatches([roomConfig.match]); 
-    	setSelectedId(roomConfig.match.id);
+		setSelectedId(roomConfig.match.id);
 
 		setIsHost(false);
 		setIsPlaying(true);
 	}
 
-	const handleStart = (title: string, leftN: string, rightN:string) => {
+	const handleStart = async (title: string, leftN: string, rightN: string, isCreatingRoom: boolean) => {
+		let currRoomId = selectedId;
+		if (isCreatingRoom) {
+			const handleCreateRoom = async () => {
+				try {
+					const matchConfig = {
+						title: title,
+						leftName: leftN,
+						rightName: rightN,
+						match: selectedMatch
+					}
+					currRoomId = `R-${crypto.randomUUID()}`;
+					const matchJson = JSON.stringify(matchConfig);
+
+					await invoke('create_host_room', { matchId: currRoomId, matchJsonStr: matchJson })
+				} catch (e) {
+					showToast("房间创建失败", 'error');
+					return;
+				}
+			}
+
+			await handleCreateRoom();
+		}
+
+		setActiveRoomId(currRoomId);
 		setTitle(title);
 		setLeftName(leftN);
 		setRightName(rightN);
@@ -112,7 +137,7 @@ function Runner() {
 			document.exitFullscreen();
 		}
 		try {
-			await invoke('close_host_room', { matchId: selectedId });
+			await invoke('close_host_room', { matchId: activeRoomId });
 			console.log("room closed");
 		}	catch (e) {
 			console.error("解散房间出错:", e);
@@ -263,7 +288,7 @@ function Runner() {
 			if (isHost && selectedId) {
 			event.preventDefault();
 			try {
-				await invoke('close_host_room', { matchId: selectedId });
+				await invoke('close_host_room', { matchId: activeRoomId });
 			} catch (e) {
 				console.error(e);
 			}
@@ -278,7 +303,7 @@ function Runner() {
 				unlisten();
 			}
 			if (isHost && selectedId) {
-				invoke('close_host_room', { matchId: selectedId }).catch(console.error);
+				invoke('close_host_room', { matchId: activeRoomId }).catch(console.error);
 			}
 		};
 	}, [selectedId, isHost]);
@@ -328,7 +353,15 @@ function Runner() {
 				);
 			case "none":
 				return (
-					<h2>{currStage.title}</h2>
+					<h2 style={{ 
+						color: "white", 
+						margin: "0 0 1.5vh 0", 
+						fontSize: "clamp(4.0rem, 2.5vh, 5.7rem)",
+						fontWeight: 600
+						}}
+					>
+						{currStage.title}
+					</h2>
 				);
 			default:
 				return (
@@ -471,7 +504,7 @@ function Runner() {
 
 							{currStage?.type === 'free' && (
 								<button className="btn" onClick={() => { setActiveSide("none"); setResetKey((prev) => prev + 1); }}>
-									全局重置
+									环节重置
 								</button>
 							)}
 						</div>

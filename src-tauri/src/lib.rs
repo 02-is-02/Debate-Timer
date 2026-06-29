@@ -54,7 +54,7 @@ async fn close_host_room(
 	
 	let client = reqwest::Client::new();
 
-	let del_url = format!("{}/del/debate:room{}", rest_url, match_id);
+	let del_url = format!("{}/del/debate:room:{}", rest_url, match_id);
 	if let Err(e) = client.get(&del_url).bearer_auth(rest_token).send().await {
 		eprintln!("警告: 无法在云端删除房间记录: {}", e);
 	}
