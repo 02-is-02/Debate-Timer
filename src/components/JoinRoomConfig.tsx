@@ -13,14 +13,14 @@ interface RemoteRoom {
 		title: string;
 		leftName: string;
 		rightName: string;
-		stages: DebateStages;
+		match: DebateStages;
 	};
 }
 
 interface JoinRoomProps {
 	isActive: boolean;
 	toggleActive: () => void;
-	onJoinSuccess: (matchId: string, roomConfig: any) => void; 
+	onJoinSuccess: (roomConfig: any) => void; 
 }
 
 export default function JoinRoomConfig({ isActive, toggleActive, onJoinSuccess }: JoinRoomProps) {
@@ -64,7 +64,8 @@ export default function JoinRoomConfig({ isActive, toggleActive, onJoinSuccess }
 			showToast(`成功连接到房间: ${id}`, "success");
 			
 			const roomData = remoteRooms.find(r => r.match_id === id);
-			onJoinSuccess(id, roomData?.config); 
+			onJoinSuccess(roomData?.config); 
+			console.log("Joined room with ID:", id, "Room config:", roomData?.config);
 			
 			toggleActive();
 		} catch (e) {
@@ -114,10 +115,10 @@ export default function JoinRoomConfig({ isActive, toggleActive, onJoinSuccess }
 										<div style={{ width: "100%" }}>
 											<div style={{ color: "white", fontWeight: "bold", display: "flex", justifyContent: "space-between" }}>
 												<span>{room.config.title || "未命名赛制"}</span>
-												<span style={{ fontSize: "0.8rem", color: "var(--std-blue)" }}>{room.config.stages?.stages.length || 0} 环节</span>
+												<span style={{ fontSize: "0.8rem", color: "var(--std-blue)" }}>{room.config.match?.stages.length || 0} 个环节</span>
 											</div>
 											<div className="mini-label" style={{ marginTop: "4px" }}>
-												房间号: {room.match_id} | {room.config.leftName} VS {room.config.rightName}
+												房间号: {room.match_id} | {room.config.leftName ? room.config.leftName : "未命名"} VS {room.config.rightName ? room.config.rightName : "未命名"}
 											</div>
 										</div>
 									</div>

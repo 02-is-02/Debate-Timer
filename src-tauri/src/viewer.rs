@@ -71,7 +71,7 @@ pub async fn start_viewer_client(match_id: String, app: tauri::AppHandle) -> Res
 	let rest_token = std::env!("UPSTASH_REDIS_REST_TOKEN");
 
 	let client = Client::new();
-	let get_url = format!("{}/get/{}", rest_url, match_id);
+	let get_url = format!("{}/get/debate:room:{}", rest_url, match_id);
 	let res = client.get(&get_url)
 		.bearer_auth(rest_token)
 		.send()
