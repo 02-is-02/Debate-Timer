@@ -1,4 +1,4 @@
-import { useState, useEffect } from "react";
+import { useState, useEffect, forwardRef, useImperativeHandle } from "react";
 import useSound from "use-sound";
 import bellSfx from '../assets/bell.mp3';
 import tickSfx from '../assets/tick.mp3';
@@ -12,24 +12,28 @@ interface TimerProps {
 	onPause: () => void;
 }
 
-export default function Timer({
-	title,
-	initialSeconds,
-	isRunning,
-	isHost,
-	onStart,
-	onPause
-}: TimerProps) {
-	const [timeLeft, setTimeLeft] = useState(initialSeconds);
+export interface TimerRef {
+	setTime: (seconds: number) => void;
+	getTime: () => number;
+}
+
+const Timer = forwardRef<TimerRef, TimerProps>((props, ref) => {
+	const [timeLeft, setTimeLeft] = useState(props.initialSeconds);
 	const [bell] = useSound(bellSfx, { volume: 0.8 });
 	const [tick, { stop: stopTick }] = useSound(tickSfx, { volume: 0.5 });
 
-	useEffect(() => {
-		if (!isRunning) stopTick();
-	}, [isRunning, stopTick])
+	const setTime = (seconds: number) => {
+		setTimeLeft(seconds);
+	};
+
+	useImperativeHandle(ref, () => ({setTime, getTime() {return timeLeft;}}));
 
 	useEffect(() => {
-		if (!isRunning) return;
+		if (!props.isRunning) stopTick();
+	}, [props.isRunning, stopTick]);
+
+	useEffect(() => {
+		if (!props.isRunning) return;
 
 		const timerId = window.setInterval(() => {
 			setTimeLeft((prevSeconds) => {
@@ -50,7 +54,7 @@ export default function Timer({
 
 		return () => clearInterval(timerId);
 
-	}, [isRunning]);
+	}, [props.isRunning]);
 
 	const formatTime = (secs: number) => {
 		const m = Math.floor(secs/60);
@@ -59,9 +63,9 @@ export default function Timer({
 	};
 
 	const handleReset = () => {
-		onPause();
-		setTimeLeft(initialSeconds);
-	}
+		props.onPause();
+		setTimeLeft(props.initialSeconds);
+	};
 
 	return (
 		<div style={{
@@ -74,14 +78,14 @@ export default function Timer({
 			boxSizing: "border-box",
 			padding: "1vh 0" 
 		}}>
-			{title && (
+			{props.title && (
 				<h2 style={{ 
 					color: "white", 
 					margin: "0 0 1.5vh 0", 
 					fontSize: "clamp(2.0rem, 2.5vh, 3.7rem)",
 					fontWeight: 600
 				}}>
-					{title}
+					{props.title}
 				</h2>
 			)}
 
@@ -110,12 +114,12 @@ export default function Timer({
 			</div>
 
 			{/* Controls */}
-			{isHost && (
+			{props.isHost && (
 				<div style={{ display: "flex", gap: "0.75rem", justifyContent: "center", marginTop: "2vh" }}>
-					<button className="btn" onClick={onStart} disabled={isRunning || timeLeft === 0}>
+					<button className="btn" onClick={props.onStart} disabled={props.isRunning || timeLeft === 0}>
 						开始
 					</button>
-					<button className="btn" onClick={onPause} disabled={!isRunning}>
+					<button className="btn" onClick={props.onPause} disabled={!props.isRunning}>
 						暂停
 					</button>
 					<button className="btn" onClick={handleReset}>
@@ -125,4 +129,6 @@ export default function Timer({
 			)}
 		</div>
 	)
-}
+})
+
+export default Timer;

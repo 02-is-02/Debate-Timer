@@ -51,3 +51,16 @@ export type NoneStage = z.infer<typeof NoneStageSchema>;
 
 export type DebateStage = z.infer<typeof DebateStageSchema>;
 export type DebateStages = z.infer<typeof DebateStagesSchema>;
+
+// Room Event
+export const RoomEventTargetSchema = z.enum(["left", "right", "none"]);
+
+export const RoomEventSchema = z.object({
+		type: z.literal("sync"),
+		stage: z.number().int().min(0),
+		activeSide: z.enum(["left", "right", "none"]),
+		leftTime: z.number().int().nonnegative().optional(),
+		rightTime: z.number().int().nonnegative().optional()
+	});
+
+export type RoomEvent = z.infer<typeof RoomEventSchema>;

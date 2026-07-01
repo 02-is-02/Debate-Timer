@@ -1,6 +1,6 @@
 import { useState, useEffect, useRef } from "react";
-import Timer from "../components/Timer";
-import { DebateStage } from "../schema";
+import Timer, { TimerRef } from "../components/Timer";
+import { DebateStage, RoomEvent } from "../schema";
 import * as configManager from "../utils/configManager";
 import { ChevronLeft, ChevronRight, Plus } from "lucide-react";
 import MatchCard from "../components/MatchCard";
@@ -9,8 +9,10 @@ import { useToast } from "../utils/Context";
 import { useLayoutContext } from "../components/Layout";
 import { invoke } from "@tauri-apps/api/core";
 import { getCurrentWindow } from "@tauri-apps/api/window";
-import { UnlistenFn } from "@tauri-apps/api/event";
+import { listen, UnlistenFn } from "@tauri-apps/api/event";
 import JoinRoomConfig from "../components/JoinRoomConfig";
+
+
 
 function Runner() {
 	const [isFullScreen, setIsFullscreen] = useState(false);
@@ -33,6 +35,8 @@ function Runner() {
 	const fullScreenContainer = useRef<HTMLDivElement>(null);
 	const scrollContainer = useRef<HTMLDivElement>(null);
 	const focusRef = useRef<{ [key: string]: HTMLDivElement | null}>({});
+	const leftTimerRef = useRef<TimerRef>(null);
+	const rightTimerRef = useRef<TimerRef>(null);
 
 	const selectedMatch = matches.find((m) => m.id === selectedId);
 	const stages: DebateStage[] = selectedMatch?.stages || [];
@@ -308,6 +312,56 @@ function Runner() {
 		};
 	}, [selectedId, isHost]);
 
+	useEffect(() => {
+		if (!isPlaying || isHost) return;
+		let unlisten: UnlistenFn | undefined;
+		const setupListener = async () => {
+			unlisten = await listen<string>('room-event', (event) => {
+				try {
+					const data: RoomEvent = JSON.parse(event.payload);
+					if (currIndex !== data.stage) setCurrIndex(data.stage);
+					if (activeSide !== data.activeSide) setActiveSide(data.activeSide);
+					if (data.leftTime !== undefined) {
+						const localLeft = leftTimerRef.current?.getTime();
+						if (localLeft !== undefined && Math.abs(localLeft - data.leftTime) > 1) {
+							leftTimerRef.current?.setTime(data.leftTime);
+						}
+					}
+					if (data.rightTime !== undefined) {
+						const localright = rightTimerRef.current?.getTime();
+						if (localright !== undefined && Math.abs(localright - data.rightTime) > 1) {
+							rightTimerRef.current?.setTime(data.rightTime);
+						}
+					}
+				} catch (e) {
+					console.error("sync failed: ", e);
+				}
+			});
+		};
+		setupListener();
+		return () => {
+			if (unlisten) unlisten();
+		};
+	}, [isPlaying, isHost]);
+
+	useEffect(() => {
+		if (!isPlaying || !isHost) return;
+
+		const syncEvent: RoomEvent = {
+			type: "sync",
+			stage: currIndex,
+			activeSide: activeSide,
+			leftTime: leftTimerRef.current?.getTime(),
+			rightTime: rightTimerRef.current?.getTime()
+		};
+
+		invoke('broadcast_packet', {
+			rawJsonStr: JSON.stringify(syncEvent)
+		}).catch(e => {
+			console.error("Failed to broadcast packet: ", e);
+		})
+	}, [currIndex, activeSide, isPlaying, isHost]);
+
 	const renderCurrStage = () => {
 		if (!currStage) return null;
 		switch (currStage.type) {
@@ -315,7 +369,7 @@ function Runner() {
 				return (
 					<div style={{width: "600px"}}>
 						<Timer
-							key={`single-${resetKey}`}
+							ref={leftTimerRef}
 							title={currStage.title}
 							initialSeconds={currStage.timeLimit}
 							isRunning={activeSide === "left"}
@@ -331,7 +385,7 @@ function Runner() {
 					<div style={{ display: "flex", flexDirection: "column", alignItems: "center" }}>
 						<div style={{ display: "flex", gap: "2rem", width: "1000px" }}>
 						<Timer 
-							key={`left-${resetKey}`}
+							ref={leftTimerRef}
 							title="正方" 
 							initialSeconds={currStage.leftTimeLimit} 
 							isRunning={activeSide === "left"}
@@ -340,7 +394,7 @@ function Runner() {
 							onPause={() => setActiveSide("none")}
 						/>
 						<Timer 
-							key={`right-${resetKey}`}
+							ref={rightTimerRef}
 							title="反方" 
 							initialSeconds={currStage.rightTimeLimit} 
 							isRunning={activeSide === "right"}
