@@ -12,13 +12,10 @@ import { getCurrentWindow } from "@tauri-apps/api/window";
 import { listen, UnlistenFn } from "@tauri-apps/api/event";
 import JoinRoomConfig from "../components/JoinRoomConfig";
 
-
-
 function Runner() {
 	const [isFullScreen, setIsFullscreen] = useState(false);
 	const [currIndex, setCurrIndex] = useState(0);
 	const [activeSide, setActiveSide] = useState<"left" | "right" | "none">("none");
-	const [resetKey, setResetKey] = useState(0);
 	const [matches, setMatches] = useState<any[]>([]);
 	const [selectedId, setSelectedId] = useState("");
 	const [activeRoomId, setActiveRoomId] = useState("");
@@ -44,6 +41,19 @@ function Runner() {
 	const isFirstPage = currIndex === 0;
 	const isLastPage = stages.length > 0 && currIndex === stages.length - 1;
 	const bText = activeSide === 'none' ? "开始环节" : "切换发言";
+
+	const  loadData = async () =>{
+			try {
+				await configManager.initAppScope();
+				const loadedFile = await configManager.loadConfigFromDisk();
+				if (Array.isArray(loadedFile)) {
+					setMatches(loadedFile);
+				}
+			} catch (error) {
+				console.error("Failed to load matches:", error);
+				showToast("赛制加载发生错误", 'error');
+			}
+		}
 
 	const handleSelectMatch = (id: string, index: number) => {
 		const isClosing = id === selectedId; 
@@ -125,13 +135,11 @@ function Runner() {
 	const handleNext = () => {
 		if (!isLastPage) setCurrIndex((prev) => prev + 1);
 		setActiveSide("none");
-		setResetKey((prev) => prev + 1);
 	};
 
 	const handlePrev = () => {
 		if (!isFirstPage) setCurrIndex((prev) => prev - 1);
 		setActiveSide("none");
-		setResetKey((prev) => prev + 1);
 	};
 
 	const handleExit = async () => {
@@ -173,19 +181,7 @@ function Runner() {
 	}, [isPlaying, setAllowDndWindow]);
 
 	useEffect(() => {
-	async function loadData() {
-		try {
-			await configManager.initAppScope();
-			const loadedFile = await configManager.loadConfigFromDisk();
-			if (Array.isArray(loadedFile)) {
-				setMatches(loadedFile);
-			}
-		} catch (error) {
-			console.error("Failed to load matches:", error);
-			showToast("赛制加载发生错误", 'error');
-		}
-	}
-	loadData();
+		loadData();
 	}, []);
 
 	useEffect(() => {
@@ -321,6 +317,7 @@ function Runner() {
 				try {
 					console.log(event.payload);
 					const data: RoomEvent = JSON.parse(event.payload);
+					if (data.type === "end") {handleExit(); return;};
 					if (currIndex !== data.stage) setCurrIndex(data.stage);
 					if (activeSide !== data.activeSide) setActiveSide(data.activeSide);
 					if (data.leftTime !== undefined) {
@@ -355,10 +352,11 @@ function Runner() {
 				type: "sync",
 				stage: currIndex,
 				activeSide: activeSide,
-				leftTime: leftTimerRef.current?.getTime(),
-				rightTime: rightTimerRef.current?.getTime()
+				leftTime: leftTimerRef.current?.getTime?.(),
+				rightTime: rightTimerRef.current?.getTime?.()
 			};
 
+			console.log("Broadcasting:", syncEvent);
 			invoke('broadcast_packet', {
 				rawJsonStr: JSON.stringify(syncEvent)
 			}).catch(e => {
@@ -371,6 +369,10 @@ function Runner() {
 		const heartBeatSync = setInterval(broadCastSync, 1000);
 		return () => clearInterval(heartBeatSync);
 	}, [currIndex, activeSide, isPlaying, isHost]);
+
+	useEffect(() => {
+		loadData();
+	}, [isPlaying]);
 
 	const renderCurrStage = () => {
 		if (!currStage) return null;
@@ -567,7 +569,7 @@ function Runner() {
 							</button>
 
 							{currStage?.type === 'free' && (
-								<button className="btn" onClick={() => { setActiveSide("none"); setResetKey((prev) => prev + 1); }}>
+								<button className="btn" onClick={() => { setActiveSide("none")}}>
 									环节重置
 								</button>
 							)}

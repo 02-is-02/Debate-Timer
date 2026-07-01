@@ -51,7 +51,10 @@ pub async fn start_host_server(match_id: &str, match_json_str: &str) -> Result<H
 		while let Some(incoming) = endpoint_clone.accept().await {
 			let connecting = match incoming.accept() {
 				Ok(conn) => conn,
-				Err(_) => continue,
+				Err(e) => {
+					println!("Connection lost: {}", e);
+					return;
+				},
 			};
 
 			let mut rx = tx_clone.subscribe();
@@ -59,16 +62,31 @@ pub async fn start_host_server(match_id: &str, match_json_str: &str) -> Result<H
 			tokio::spawn(async move {
 				let connection = match connecting.await {
 					Ok(c) => c,
-					Err(_) => return,
+					Err(e) => {
+						println!("Init connection failed: {}", e);
+						return;
+					}
 				};
+
+				println!("Connection built successfully");
 
 				let mut send_stream = match connection.open_uni().await {
 					Ok(s) => s,
-					Err(_) => return,
+					Err(e) => {
+						println!("Init data stream failed: {}", e);
+						return;
+					},
 				};
 
+				let welcome_msg = "{\"type\":\"ping\"}\n";
+				let _ = send_stream.write_all(welcome_msg.as_bytes()).await;
+				let _ = send_stream.flush().await;
+				println!("Pinged");
+
 				while let Ok(msg) = rx.recv().await {
+					println!("Sending: {}", msg.trim());
 					if send_stream.write_all(msg.as_bytes()).await.is_err() {
+						println!("Viewer stopped the connection");
 						break;
 					}
 					let _ = send_stream.flush().await;

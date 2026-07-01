@@ -106,18 +106,22 @@ pub async fn start_viewer_client(
 	*conn_lock = Some(connection.clone());
 
 	tokio::spawn(async move {
+		println!("Waiting for data stream");
 		if let Ok(recv_stream) = connection.accept_uni().await {
+			println!("Connected, listening");
 			let mut reader = BufReader::new(recv_stream);
 			let mut line = String::new();
 
 			while let Ok(bytes_read) = reader.read_line(&mut line).await {
 				if bytes_read == 0 {
-					println!("no data");
+					println!("Connection lost");
 					break;
 				}
-				println!("{}", line.trim().to_string());
+				println!("Raw data: {}", line.trim().to_string());
 
-				let _ = app.emit("room-event", line.trim().to_string());
+				if let Err(e) = app.emit("room-event", line.trim().to_string()) {
+					println!("Emit Event failed: {}", e);
+				}
 
 				line.clear();
 			}

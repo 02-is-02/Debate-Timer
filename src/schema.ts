@@ -55,12 +55,17 @@ export type DebateStages = z.infer<typeof DebateStagesSchema>;
 // Room Event
 export const RoomEventTargetSchema = z.enum(["left", "right", "none"]);
 
-export const RoomEventSchema = z.object({
+export const RoomEventSchema = z.discriminatedUnion("type", [
+	z.object({
 		type: z.literal("sync"),
 		stage: z.number().int().min(0),
 		activeSide: z.enum(["left", "right", "none"]),
 		leftTime: z.number().int().nonnegative().optional(),
 		rightTime: z.number().int().nonnegative().optional()
-	});
+	}),
+	z.object({
+		type: z.literal("end")
+	})
+])
 
 export type RoomEvent = z.infer<typeof RoomEventSchema>;
