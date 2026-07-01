@@ -3,7 +3,6 @@ use std::{path::PathBuf, sync::Mutex};
 use iroh::{EndpointAddr, endpoint::Connection};
 use tauri_plugin_fs::FsExt;
 use tokio::sync::broadcast;
-use crate::{host::start_host_server, viewer::start_viewer_client, viewer::list_remote_rooms, gemini_api::generate_stage};
 mod host;
 mod viewer;
 mod gemini_api;
@@ -14,6 +13,7 @@ pub struct HostState {
 }
 
 pub struct ViewerState {
+	pub endpoint: Mutex<Option<iroh::Endpoint>>,
 	pub connection: Mutex<Option<Connection>>
 }
 
@@ -38,7 +38,7 @@ async fn create_host_room(
 			return Err("当前已经存在一个运行中的房间，请勿重复点击".to_string());
 		}
 	}
-	let manager = start_host_server(&match_id, &match_json_str)
+	let manager = host::start_host_server(&match_id, &match_json_str)
 		.await
 		.map_err(|e| format!("启动节点失败: {}", e))?;
 
@@ -100,16 +100,19 @@ pub fn run() {
 			sender: Mutex::new(None)
 		})
 		.manage(ViewerState {
+			endpoint: Mutex::new(None),
 			connection: Mutex::new(None)
 		})
+		.manage(viewer::TaskState::default())
 		.invoke_handler(tauri::generate_handler![
-			generate_stage, 
+			gemini_api::generate_stage, 
 			allow_custom_path,
 			create_host_room,
 			close_host_room,
 			broadcast_packet,
-			start_viewer_client,
-			list_remote_rooms
+			viewer::start_viewer_client,
+			viewer::cancel_viewer_client,
+			viewer::list_remote_rooms
 		])
 		.run(tauri::generate_context!())
 		.expect("error while running tauri application");

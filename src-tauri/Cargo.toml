@@ -29,4 +29,5 @@ reqwest = { version = "0.13.4", features = ["json"] }
 base64 = "0.22.1"
 tokio = "1.52.3"
 iroh = "1.0.0"
+tokio-util = "0.7.18"
 
