@@ -198,6 +198,7 @@ function Runner() {
 
 	useEffect(() => {
 	const handleKeyDown  = (e: KeyboardEvent) => {
+		if (e.key === 'Escape') handleExit();
 		if (!isHost) return;
 		if (e.repeat) return;
 		if (e.ctrlKey || e.altKey || e.metaKey) return;
