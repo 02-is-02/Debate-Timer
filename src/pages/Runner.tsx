@@ -319,6 +319,7 @@ function Runner() {
 		const setupListener = async () => {
 			unlisten = await listen<string>('room-event', (event) => {
 				try {
+					console.log(event.payload);
 					const data: RoomEvent = JSON.parse(event.payload);
 					if (currIndex !== data.stage) setCurrIndex(data.stage);
 					if (activeSide !== data.activeSide) setActiveSide(data.activeSide);
@@ -339,6 +340,7 @@ function Runner() {
 				}
 			});
 		};
+
 		setupListener();
 		return () => {
 			if (unlisten) unlisten();
@@ -348,19 +350,26 @@ function Runner() {
 	useEffect(() => {
 		if (!isPlaying || !isHost) return;
 
-		const syncEvent: RoomEvent = {
-			type: "sync",
-			stage: currIndex,
-			activeSide: activeSide,
-			leftTime: leftTimerRef.current?.getTime(),
-			rightTime: rightTimerRef.current?.getTime()
+		const broadCastSync = () => {
+			const syncEvent: RoomEvent = {
+				type: "sync",
+				stage: currIndex,
+				activeSide: activeSide,
+				leftTime: leftTimerRef.current?.getTime(),
+				rightTime: rightTimerRef.current?.getTime()
+			};
+
+			invoke('broadcast_packet', {
+				rawJsonStr: JSON.stringify(syncEvent)
+			}).catch(e => {
+				console.error("Failed to broadcast packet: ", e);
+			})
 		};
 
-		invoke('broadcast_packet', {
-			rawJsonStr: JSON.stringify(syncEvent)
-		}).catch(e => {
-			console.error("Failed to broadcast packet: ", e);
-		})
+		broadCastSync();
+
+		const heartBeatSync = setInterval(broadCastSync, 1000);
+		return () => clearInterval(heartBeatSync);
 	}, [currIndex, activeSide, isPlaying, isHost]);
 
 	const renderCurrStage = () => {

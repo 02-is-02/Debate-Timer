@@ -6,6 +6,7 @@ use serde_json::Value;
 use tokio;
 use tokio::io::{AsyncBufReadExt, BufReader};
 use reqwest::Client;
+use crate::ViewerState;
 
 #[derive(Serialize, Deserialize, Clone)]
 pub struct RemoteRoomInfo {
@@ -65,7 +66,11 @@ pub async fn list_remote_rooms() -> Result<Vec<RemoteRoomInfo>, String> {
 }
 
 #[tauri::command]
-pub async fn start_viewer_client(match_id: String, app: tauri::AppHandle) -> Result<(), String> {
+pub async fn start_viewer_client(
+	match_id: String,
+	app: tauri::AppHandle,
+	state: tauri::State<'_, ViewerState>
+) -> Result<(), String> {
 
 	let rest_url = std::env!("UPSTASH_REDIS_REST_URL");
 	let rest_token = std::env!("UPSTASH_REDIS_REST_TOKEN");
@@ -97,6 +102,8 @@ pub async fn start_viewer_client(match_id: String, app: tauri::AppHandle) -> Res
 		.connect(host_addr, alpn)
 		.await
 		.map_err(|e| format!("连接房主节点失败: {}", e))?;
+	let mut conn_lock = state.connection.lock().unwrap();
+	*conn_lock = Some(connection.clone());
 
 	tokio::spawn(async move {
 		if let Ok(recv_stream) = connection.accept_uni().await {
@@ -105,15 +112,16 @@ pub async fn start_viewer_client(match_id: String, app: tauri::AppHandle) -> Res
 
 			while let Ok(bytes_read) = reader.read_line(&mut line).await {
 				if bytes_read == 0 {
+					println!("no data");
 					break;
 				}
+				println!("{}", line.trim().to_string());
 
 				let _ = app.emit("room-event", line.trim().to_string());
 
 				line.clear();
 			}
 		}
-
 	});
 
 	Ok(())

@@ -1,6 +1,6 @@
 // Learn more about Tauri commands at https://tauri.app/develop/calling-rust/
 use std::{path::PathBuf, sync::Mutex};
-use iroh::EndpointAddr;
+use iroh::{EndpointAddr, endpoint::Connection};
 use tauri_plugin_fs::FsExt;
 use tokio::sync::broadcast;
 use crate::{host::start_host_server, viewer::start_viewer_client, viewer::list_remote_rooms, gemini_api::generate_stage};
@@ -11,6 +11,10 @@ mod models;
 
 pub struct HostState {
 	pub sender: Mutex<Option<broadcast::Sender<String>>>
+}
+
+pub struct ViewerState {
+	pub connection: Mutex<Option<Connection>>
 }
 
 #[tauri::command]
@@ -94,6 +98,9 @@ pub fn run() {
 		.plugin(tauri_plugin_opener::init())
 		.manage(HostState {
 			sender: Mutex::new(None)
+		})
+		.manage(ViewerState {
+			connection: Mutex::new(None)
 		})
 		.invoke_handler(tauri::generate_handler![
 			generate_stage, 

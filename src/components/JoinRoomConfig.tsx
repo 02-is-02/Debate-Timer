@@ -114,7 +114,7 @@ export default function JoinRoomConfig({ isActive, toggleActive, onJoinSuccess }
 									>
 										<div style={{ width: "100%" }}>
 											<div style={{ color: "white", fontWeight: "bold", display: "flex", justifyContent: "space-between" }}>
-												<span>{room.config.title || "未命名赛制"}</span>
+												<span>{room.config.title || "无辩题"}</span>
 												<span style={{ fontSize: "0.8rem", color: "var(--std-blue)" }}>{room.config.match?.stages.length || 0} 个环节</span>
 											</div>
 											<div className="mini-label" style={{ marginTop: "4px" }}>
