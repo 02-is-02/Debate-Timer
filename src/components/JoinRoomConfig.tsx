@@ -51,6 +51,16 @@ export default function JoinRoomConfig({ isActive, toggleActive, onJoinSuccess }
 		}
 	};
 
+	const handleCancel = async () => {
+		try {
+			setIsConnecting(false);
+			await invoke('cancel_viewer_client');
+			toggleActive();
+		} catch (e) {
+			showToast(`取消连接失败: ${e}`, "error");
+		}
+	}
+
 	const handleJoinSubmit = async () => {
 		if (!id.trim()) {
 			showToast("请先选择一个房间", "warning");
@@ -135,7 +145,7 @@ export default function JoinRoomConfig({ isActive, toggleActive, onJoinSuccess }
 					}}
 				>
 					<Button 
-						onClick={toggleActive} 
+						onClick={handleCancel} 
 						sx={{ color: '#94a3b8', border: "1px solid rgba(255,255,255,0.2)" }}
 					>
 						取消

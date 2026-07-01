@@ -19,14 +19,14 @@ export interface TimerRef {
 
 const Timer = forwardRef<TimerRef, TimerProps>((props, ref) => {
 	const [timeLeft, setTimeLeft] = useState(props.initialSeconds);
+	const [reseting, setReseting] = useState(false);
 	const [bell] = useSound(bellSfx, { volume: 0.8 });
 	const [tick, { stop: stopTick }] = useSound(tickSfx, { volume: 0.5 });
 
-	const setTime = (seconds: number) => {
-		setTimeLeft(seconds);
-	};
-
-	useImperativeHandle(ref, () => ({setTime, getTime() {return timeLeft;}}));
+	useImperativeHandle(ref, () => ({
+		setTime(seconds: number) {setTimeLeft(seconds);},
+		getTime() {return timeLeft;}
+	}));
 
 	useEffect(() => {
 		if (!props.isRunning) stopTick();
@@ -65,6 +65,10 @@ const Timer = forwardRef<TimerRef, TimerProps>((props, ref) => {
 	const handleReset = () => {
 		props.onPause();
 		setTimeLeft(props.initialSeconds);
+	};
+
+	const handleCustomReset = () => {
+
 	};
 
 	return (
@@ -122,7 +126,7 @@ const Timer = forwardRef<TimerRef, TimerProps>((props, ref) => {
 					<button className="btn" onClick={props.onPause} disabled={!props.isRunning}>
 						暂停
 					</button>
-					<button className="btn" onClick={handleReset}>
+					<button className="btn" onClick={() => setReseting(true)} onDoubleClick={handleReset}>
 						重置
 					</button>
 				</div>

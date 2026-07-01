@@ -90,6 +90,18 @@ export default function Settings() {
 					{isSaving ? "正在保存，请勿关闭页面" : "已保存"}
 				</label>
 			</div>
+			{renderDivider("计时显示相关")}
+			<div className="settings-group long">
+				<label className="mini-label">
+					开启比赛默认创建房间：
+				</label>
+				<Switch
+					size="small"
+					checked={autoCreateRoom}
+					onChange={(e) => setAutoCreateRoom(e.target.checked)}
+				/>
+			</div>
+
 			{renderDivider("AI生成相关")}
 			<div className="settings-group">
 				<label className="mini-label">

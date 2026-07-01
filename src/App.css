@@ -13,6 +13,8 @@
 	--std-glass: rgba(255, 255, 255, 0.3);
 	--lgt-glass: rgba(255, 255, 255, 0.03);
 	--highlight-glass: rgba(255, 255, 255, 0.05);
+	--diag-light: #94a3b8;
+	--diag-alt: #475569;
 }
 
 html, body {

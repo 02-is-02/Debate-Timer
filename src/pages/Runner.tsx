@@ -2,7 +2,7 @@ import { useState, useEffect, useRef } from "react";
 import Timer, { TimerRef } from "../components/Timer";
 import { DebateStage, RoomEvent } from "../schema";
 import * as configManager from "../utils/configManager";
-import { ChevronLeft, ChevronRight, Plus } from "lucide-react";
+import { ChevronLeft, ChevronRight, Link2, Plus, SquareArrowOutUpRight } from "lucide-react";
 import MatchCard from "../components/MatchCard";
 import { Maximize, Minimize } from "lucide-react";
 import { useToast } from "../utils/Context";
@@ -11,9 +11,11 @@ import { invoke } from "@tauri-apps/api/core";
 import { getCurrentWindow } from "@tauri-apps/api/window";
 import { listen, UnlistenFn } from "@tauri-apps/api/event";
 import JoinRoomConfig from "../components/JoinRoomConfig";
+import { Button, Dialog, DialogActions, DialogContent, DialogContentText, DialogTitle } from "@mui/material";
 
 function Runner() {
 	const [isFullScreen, setIsFullscreen] = useState(false);
+	const [isMiniWindow, setIsMiniWindow] = useState(false);
 	const [currIndex, setCurrIndex] = useState(0);
 	const [activeSide, setActiveSide] = useState<"left" | "right" | "none">("none");
 	const [matches, setMatches] = useState<any[]>([]);
@@ -25,6 +27,7 @@ function Runner() {
 	const [rightName, setRightName] = useState("");
 	const [stageZoom, setStageZoom] = useState(1);
 	const [isHost, setIsHost] = useState(false);
+	const [showHostCode, setShowHostCode] = useState(false);
 
 	const { showToast } = useToast();
 	const { setAllowDndWindow, isRunning: isPlaying, setIsRunning: setIsPlaying } = useLayoutContext()
@@ -115,6 +118,7 @@ function Runner() {
 					const matchJson = JSON.stringify(matchConfig);
 
 					await invoke('create_host_room', { matchId: currRoomId, matchJsonStr: matchJson })
+					setShowHostCode(true);
 				} catch (e) {
 					showToast("房间创建失败", 'error');
 					return;
@@ -156,6 +160,11 @@ function Runner() {
 		}
 		setIsHost(false);
 	};
+
+	const handleCopyRoomCode = () => {
+		navigator.clipboard.writeText(activeRoomId);
+		showToast("复制成功", "success");
+	}
 
 	const toggleFullScreen = async () => {
 		if (!document.fullscreenElement) {
@@ -318,8 +327,8 @@ function Runner() {
 					console.log(event.payload);
 					const data: RoomEvent = JSON.parse(event.payload);
 					if (data.type === "end") {handleExit(); return;};
-					if (currIndex !== data.stage) setCurrIndex(data.stage);
-					if (activeSide !== data.activeSide) setActiveSide(data.activeSide);
+					setCurrIndex(data.stage);
+					setActiveSide(data.activeSide);
 					if (data.leftTime !== undefined) {
 						const localLeft = leftTimerRef.current?.getTime();
 						if (localLeft !== undefined && Math.abs(localLeft - data.leftTime) > 1) {
@@ -342,7 +351,7 @@ function Runner() {
 		return () => {
 			if (unlisten) unlisten();
 		};
-	}, [isPlaying, isHost]);
+	}, [isPlaying, isHost, setActiveSide]);
 
 	useEffect(() => {
 		if (!isPlaying || !isHost) return;
@@ -396,7 +405,7 @@ function Runner() {
 				return (
 					<div style={{ display: "flex", flexDirection: "column", alignItems: "center" }}>
 						<div style={{ display: "flex", gap: "2rem", width: "1000px" }}>
-						<Timer 
+						<Timer
 							ref={leftTimerRef}
 							title="正方" 
 							initialSeconds={currStage.leftTimeLimit} 
@@ -405,7 +414,7 @@ function Runner() {
 							onStart={() => setActiveSide("left")}
 							onPause={() => setActiveSide("none")}
 						/>
-						<Timer 
+						<Timer
 							ref={rightTimerRef}
 							title="反方" 
 							initialSeconds={currStage.rightTimeLimit} 
@@ -500,20 +509,42 @@ function Runner() {
 			ref={fullScreenContainer}
 			style={{ position: "relative" }}
 		>
-			<button
-				className="btn-icon"
+			<div
 				style={{
+					display: "flex",
+					flexDirection: "row",
 					position: "absolute",
-					top: "24px",
-					right: "30px",
-					zIndex: 9999,
-					"--btn-theme": "var(--alt-blue)"
-				} as React.CSSProperties }
-				onClick={toggleFullScreen}
-				title={isFullScreen ? "退出全屏" : "全屏模式"}
+					top: "5px",
+					right: "10px",
+					zIndex: 9999
+				}}
 			>
-				{isFullScreen ? <Minimize size={20} /> : <Maximize size={20} />}
-			</button>
+				<button
+					className="btn-icon"
+					style={{ "--btn-theme": "var(--alt-blue)" } as React.CSSProperties }
+					onClick={handleCopyRoomCode}
+					title={"复制房间号"}
+				>
+					<Link2 size={20} />
+				</button>
+				<button
+					className="btn-icon"
+					style={{ "--btn-theme": "var(--alt-blue)" } as React.CSSProperties }
+					onClick={toggleFullScreen}
+					title={isMiniWindow ? "回到窗口" : "小窗模式"}
+				>
+					{isMiniWindow ? <Maximize size={20} /> : <SquareArrowOutUpRight size={20} />}
+				</button>
+				<button
+					className="btn-icon"
+					style={{ "--btn-theme": "var(--alt-blue)" } as React.CSSProperties }
+					onClick={toggleFullScreen}
+					title={isFullScreen ? "退出全屏" : "全屏模式"}
+				>
+					{isFullScreen ? <Minimize size={20} /> : <Maximize size={20} />}
+				</button>
+			</div>
+			
 			<div style={{
 				zoom: stageZoom,
 				width: "1280px", 
@@ -582,6 +613,30 @@ function Runner() {
 					</div>
 				}
 			</div>
+			<Dialog 
+				open={showHostCode && isHost} 
+			>
+				<DialogTitle sx={{ margin: 0, paddingBottom: 1, color: "var(--lgt-blue)" }}>
+					房间号
+				</DialogTitle>
+				<DialogContent>
+					<DialogContentText sx={{ color: 'var(--diag-light)' }}>
+						您的房间号是：{activeRoomId}
+					</DialogContentText>
+				</DialogContent>
+				<DialogActions sx={{ padding: "16px 24px" }}>
+					<Button onClick={handleCopyRoomCode} sx={{ color: 'var(--diag-light)', border: "1px solid var(--diag-alt)" }}>
+						复制
+					</Button>
+					<Button 
+						onClick={() => setShowHostCode(false)} 
+						variant="contained" 
+						sx={{ backgroundColor: 'var(--std-blue)', '&:hover': { backgroundColor: '#3956fa'}, color: 'white', fontWeight: 'bold' }}
+					>
+						关闭
+					</Button>
+				</DialogActions>
+			</Dialog>
 		</div>
 	);
 }

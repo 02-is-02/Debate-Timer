@@ -243,7 +243,7 @@ export default function Editor() {
 								className={`stage-card ${isSelected ? "active" : ""}`} 
 							>
 								<div style={{ display: "flex", alignItems: "center", gap: "12px" }}>
-									<FileText size={20} color={isSelected ? "#60a5fa" : "#94a3b8"} />
+									<FileText size={20} color={isSelected ? "var(--sky-blue" : "var(--diag-light)"} />
 									<span style={{ color: isSelected ? "#fff" : "#e2e8f0", fontSize: "1.15rem", fontWeight: "500" }}>
 										{m.name || "未命名赛制"}
 									</span>
@@ -309,12 +309,12 @@ export default function Editor() {
 			>
 				<DialogTitle style={{ margin: "0 0 12px 0", color: "#f8fafc" }}>确认删除此赛制？</DialogTitle>
 				<DialogContent>
-					<DialogContentText style={{ color: '#94a3b8' }}>
+					<DialogContentText style={{ color: 'var(--diag-light)' }}>
 						该操作无法撤销，与其相关的所有环节配置都将被永久移除。
 					</DialogContentText>
 				</DialogContent>
 				<DialogActions style={{ display: "flex", justifyContent: "flex-end", gap: "12px", padding: "16px 24px" }}>
-					<Button onClick={() => setDeletingId(null)} sx={{ color: '#94a3b8', border: "1px solid #475569" }}>
+					<Button onClick={() => setDeletingId(null)} sx={{ color: 'var(--diag-light)', border: "1px solid var(--diag-alt)" }}>
 						取消
 					</Button>
 					<Button onClick={handleDeleteConfirm} variant="contained" sx={{ backgroundColor: '#f43f5e', '&:hover': { backgroundColor: '#e11d48' } }}>
@@ -330,14 +330,14 @@ export default function Editor() {
 					发现同名赛制
 				</DialogTitle>
 				<DialogContent>
-					<DialogContentText sx={{ color: '#94a3b8' }}>
+					<DialogContentText sx={{ color: 'var(--diag-light)' }}>
 						导入的文件中，包含已经存在于库中的赛制。
 						<br/><br/>
 						继续导入将<strong>覆盖</strong>原有的配置，是否继续？
 					</DialogContentText>
 				</DialogContent>
 				<DialogActions sx={{ padding: "16px 24px" }}>
-					<Button onClick={handleCancelImport} sx={{ color: '#94a3b8', border: "1px solid #475569" }}>
+					<Button onClick={handleCancelImport} sx={{ color: 'var(--diag-light)', border: "1px solid var(--diag-alt)" }}>
 						取消
 					</Button>
 					<Button 
