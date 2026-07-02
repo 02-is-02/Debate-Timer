@@ -20,6 +20,7 @@ export interface TimerRef {
 const Timer = forwardRef<TimerRef, TimerProps>((props, ref) => {
 	const [timeLeft, setTimeLeft] = useState(props.initialSeconds);
 	const [reseting, setReseting] = useState(false);
+	const [sec, setSec] = useState(props.initialSeconds);
 	const [bell] = useSound(bellSfx, { volume: 0.8 });
 	const [tick, { stop: stopTick }] = useSound(tickSfx, { volume: 0.5 });
 
@@ -67,8 +68,10 @@ const Timer = forwardRef<TimerRef, TimerProps>((props, ref) => {
 		setTimeLeft(props.initialSeconds);
 	};
 
-	const handleCustomReset = () => {
-
+	const handleCustomReset = (seconds: number) => {
+		props.onPause();
+		setTimeLeft(seconds);
+		setReseting(false);
 	};
 
 	return (
@@ -121,15 +124,36 @@ const Timer = forwardRef<TimerRef, TimerProps>((props, ref) => {
 			{/* Controls */}
 			{props.isHost && (
 				<div style={{ display: "flex", gap: "0.75rem", justifyContent: "center", marginTop: "2vh" }}>
-					<button className="btn" onClick={props.onStart} disabled={props.isRunning || timeLeft === 0}>
-						开始
-					</button>
-					<button className="btn" onClick={props.onPause} disabled={!props.isRunning}>
-						暂停
-					</button>
-					<button className="btn" onClick={() => setReseting(true)} onDoubleClick={handleReset}>
-						重置
-					</button>
+					{!reseting ? (
+						<>
+							<button className="btn" onClick={props.onStart} disabled={props.isRunning || timeLeft === 0}>
+								开始
+							</button>
+							<button className="btn" onClick={props.onPause} disabled={!props.isRunning}>
+								暂停
+							</button>
+							<button className="btn" onClick={() => setReseting(true)} onDoubleClick={handleReset}>
+								重置
+							</button>
+						</>
+					) : (
+						<>
+							<input 
+								type="number"
+								min="0"
+								className="glass-input"
+								style={{ flex: 1 }}
+								placeholder={props.initialSeconds.toString()}
+								onChange={(e) => setSec(Math.min(parseInt(e.target.value, 10), 36000) || props.initialSeconds)}
+							/>
+							<button className="btn" onClick={() => setReseting(false)}>
+								取消
+							</button>
+							<button className="btn" onClick={() => handleCustomReset(sec)}>
+								重置
+							</button>
+						</>
+					)}
 				</div>
 			)}
 		</div>
