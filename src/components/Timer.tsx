@@ -80,6 +80,7 @@ const Timer = forwardRef<TimerRef, TimerProps>((props, ref) => {
 			justifyContent: "center",
 			alignItems: "center",
 			boxSizing: "border-box",
+			gap: "20px",
 			padding: "1vh 0" 
 		}}>
 			{props.title && (

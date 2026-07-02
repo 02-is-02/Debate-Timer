@@ -2,16 +2,17 @@ import { useState, useEffect, useRef } from "react";
 import Timer, { TimerRef } from "../components/Timer";
 import { DebateStage, RoomEvent } from "../schema";
 import * as configManager from "../utils/configManager";
-import { ChevronLeft, ChevronRight, Link2, Plus, SquareArrowOutUpRight } from "lucide-react";
+import { ChevronLeft, ChevronRight, Link2, MonitorOff, Plus, SquareArrowOutUpRight } from "lucide-react";
 import MatchCard from "../components/MatchCard";
 import { Maximize, Minimize } from "lucide-react";
 import { useToast } from "../utils/Context";
 import { useLayoutContext } from "../components/Layout";
 import { invoke } from "@tauri-apps/api/core";
-import { getCurrentWindow } from "@tauri-apps/api/window";
+import { currentMonitor, getCurrentWindow, LogicalSize, PhysicalPosition } from "@tauri-apps/api/window";
 import { listen, UnlistenFn } from "@tauri-apps/api/event";
 import JoinRoomConfig from "../components/JoinRoomConfig";
 import { Button, Dialog, DialogActions, DialogContent, DialogContentText, DialogTitle } from "@mui/material";
+import MiniTimerPage from "../components/MiniPage";
 
 function Runner() {
 	const [isFullScreen, setIsFullscreen] = useState(false);
@@ -27,6 +28,7 @@ function Runner() {
 	const [rightName, setRightName] = useState("");
 	const [stageZoom, setStageZoom] = useState(1);
 	const [isHost, setIsHost] = useState(false);
+	const [isHosting, setIsHosting] = useState(false);
 	const [showHostCode, setShowHostCode] = useState(false);
 
 	const { showToast } = useToast();
@@ -44,6 +46,7 @@ function Runner() {
 	const isFirstPage = currIndex === 0;
 	const isLastPage = stages.length > 0 && currIndex === stages.length - 1;
 	const bText = activeSide === 'none' ? "开始环节" : "切换发言";
+	const appWindow = getCurrentWindow();
 
 	const  loadData = async () =>{
 			try {
@@ -119,6 +122,7 @@ function Runner() {
 
 					await invoke('create_host_room', { matchId: currRoomId, matchJsonStr: matchJson })
 					setShowHostCode(true);
+					setIsHosting(true);
 				} catch (e) {
 					showToast("房间创建失败", 'error');
 					return;
@@ -180,6 +184,38 @@ function Runner() {
 			}
 		}
 	};
+
+	const toggleMiniWindow = async () => {
+		try {
+			if (isMiniWindow) {
+				await appWindow.setDecorations(true);
+				await appWindow.setSize(new LogicalSize(1280, 720));
+				await appWindow.setAlwaysOnTop(false);
+				await appWindow.center();
+				setIsMiniWindow(false);
+			} else {
+				await appWindow.setDecorations(false);
+				await appWindow.setSize(new LogicalSize(320, 240));
+				await appWindow.setAlwaysOnTop(true);
+
+				const monitor = await currentMonitor();
+				if (monitor) {
+					const physicalWidth = 320 * monitor.scaleFactor;
+					const physicalHeight = 240 * monitor.scaleFactor;
+
+					const targetX = monitor.size.width - physicalWidth - 20;
+					const targetY = monitor.size.height - physicalHeight - 60;
+
+					await appWindow.setPosition(new PhysicalPosition(targetX, targetY));
+				};
+
+				setIsMiniWindow(true);
+			}
+		} catch (e) {
+			showToast("切换小窗失败", "error");
+			console.error("Failed to swap mini window: ", e);
+		}
+	}
 
 	useEffect(() => {
 		setAllowDndWindow(!isPlaying);
@@ -354,7 +390,7 @@ function Runner() {
 	}, [isPlaying, isHost, setActiveSide]);
 
 	useEffect(() => {
-		if (!isPlaying || !isHost) return;
+		if (!isPlaying || !isHost || !isHosting) return;
 
 		const broadCastSync = () => {
 			const syncEvent: RoomEvent = {
@@ -503,6 +539,15 @@ function Runner() {
 		);
 	}
 
+	if (isMiniWindow) {
+			return (
+				<MiniTimerPage
+					onClose={toggleMiniWindow}
+					renderStage={renderCurrStage}
+				/>
+			)
+		}
+
 	return (
 		<div 
 			className="container" 
@@ -530,8 +575,8 @@ function Runner() {
 				<button
 					className="btn-icon"
 					style={{ "--btn-theme": "var(--alt-blue)" } as React.CSSProperties }
-					onClick={toggleFullScreen}
-					title={isMiniWindow ? "回到窗口" : "小窗模式"}
+					onClick={toggleMiniWindow}
+					title={"小窗模式"}
 				>
 					{isMiniWindow ? <Maximize size={20} /> : <SquareArrowOutUpRight size={20} />}
 				</button>
