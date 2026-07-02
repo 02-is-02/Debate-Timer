@@ -1,10 +1,12 @@
 // Learn more about Tauri commands at https://tauri.app/develop/calling-rust/
 use std::{path::PathBuf, sync::Mutex};
 use iroh::{EndpointAddr, endpoint::Connection};
+use tauri::Manager;
 use tauri_plugin_fs::FsExt;
 use tokio::sync::broadcast;
 mod host;
 mod viewer;
+mod file_manager;
 mod gemini_api;
 mod models;
 
@@ -21,7 +23,19 @@ pub struct ViewerState {
 async fn allow_custom_path(app: tauri::AppHandle, path: String) -> Result<(), String> {
 	let path_buf = PathBuf::from(&path);
 
-	app.fs_scope().allow_directory(&path_buf, true).map_err(|e| format!("Rust dynamic permission granting failed:{}", e))?;
+	if path_buf.is_dir() {
+		app.fs_scope().allow_directory(&path_buf, true).map_err(|e| e.to_string())?;
+	} else {
+		app.fs_scope().allow_file(&path_buf).map_err(|e| e.to_string())?;
+	}
+
+	let asset_scope = app.asset_protocol_scope();
+	if path_buf.is_dir() {
+		asset_scope.allow_directory(&path_buf, true).map_err(|e| e.to_string())?;
+	} else {
+		asset_scope.allow_file(&path_buf).map_err(|e| e.to_string())?;
+	}
+
 	println!("Added path to whitelist: {}", path);
 	Ok(())
 }
@@ -112,7 +126,9 @@ pub fn run() {
 			broadcast_packet,
 			viewer::start_viewer_client,
 			viewer::cancel_viewer_client,
-			viewer::list_remote_rooms
+			viewer::list_remote_rooms,
+			file_manager::save_imported_file,
+			file_manager::get_system_fonts
 		])
 		.run(tauri::generate_context!())
 		.expect("error while running tauri application");

@@ -50,12 +50,16 @@ export default function NewMatchConfig({ isActive, toggleActive, onCreate }: new
 
 	const handleGenerate = async () => {
 		const newId = `M-${crypto.randomUUID()}`;
-		const savedApiKey = localStorage.getItem('gemini_api_key') || '';
-		const savedModel = localStorage.getItem('gemini_model') || 'gemini-1.5-flash';
+		let settings: any = {};
+		try {
+			settings = JSON.parse(localStorage.getItem('app_settings') || '{}');
+		} catch {
+			settings = {};
+		}
 		const apiNeeded = !isEmpty(text.trim()) || attachments.length > 0;
-		console.log("API needed:", apiNeeded, "Saved API Key:", !!savedApiKey, "Prompt text:", text.trim(), "Attachments:", attachments);
+		console.log("API needed:", apiNeeded, "Saved API Key:", !!settings?.apiKey, "Prompt text:", text.trim(), "Attachments:", attachments);
 
-		if (!savedApiKey && apiNeeded) {
+		if (!settings?.apiKey && apiNeeded) {
 			showToast("请先在设置中填写 Gemini API Key！", "error");
 			return;
 		}
@@ -90,8 +94,8 @@ export default function NewMatchConfig({ isActive, toggleActive, onCreate }: new
 				matchName: name.trim() ? name.trim() : null,
 				promptText: text.trim(),
 				attachments: processedFiles,
-				apiKey: savedApiKey,
-				model: savedModel
+				apiKey: settings?.apiKey,
+				model: settings?.model
 			};
 
 			const data = await invoke("generate_stage", { payload });
@@ -106,7 +110,7 @@ export default function NewMatchConfig({ isActive, toggleActive, onCreate }: new
 		} finally {
 			setIsRequesting(false);
 		}
-	} 
+	};
 
 	const { isHovering } = useTauriDropZone(dropRef, async (paths) => {
 		if (!isActive) return;

@@ -7,12 +7,13 @@ import MatchCard from "../components/MatchCard";
 import { Maximize, Minimize } from "lucide-react";
 import { useToast } from "../utils/Context";
 import { useLayoutContext } from "../components/Layout";
-import { invoke } from "@tauri-apps/api/core";
+import { convertFileSrc, invoke } from "@tauri-apps/api/core";
 import { currentMonitor, getCurrentWindow, LogicalSize, PhysicalPosition } from "@tauri-apps/api/window";
 import { listen, UnlistenFn } from "@tauri-apps/api/event";
 import JoinRoomConfig from "../components/JoinRoomConfig";
 import { Button, Dialog, DialogActions, DialogContent, DialogContentText, DialogTitle } from "@mui/material";
 import MiniTimerPage from "../components/MiniPage";
+import { appDataDir, join } from "@tauri-apps/api/path";
 
 function Runner() {
 	const [isFullScreen, setIsFullscreen] = useState(false);
@@ -30,6 +31,14 @@ function Runner() {
 	const [isHost, setIsHost] = useState(false);
 	const [isHosting, setIsHosting] = useState(false);
 	const [showHostCode, setShowHostCode] = useState(false);
+	const [settings, setSettings] = useState(() => {
+		try {
+			return JSON.parse(localStorage.getItem('app_settings') || "{}");
+		} catch (e) {
+			console.log("Read settings failed", e);
+		}
+	});
+	const [bgUrl, setBgUrl] = useState('');
 
 	const { showToast } = useToast();
 	const { setAllowDndWindow, isRunning: isPlaying, setIsRunning: setIsPlaying } = useLayoutContext()
@@ -47,19 +56,20 @@ function Runner() {
 	const isLastPage = stages.length > 0 && currIndex === stages.length - 1;
 	const bText = activeSide === 'none' ? "开始环节" : "切换发言";
 	const appWindow = getCurrentWindow();
+	const font = settings.font ? `"${settings.font}", sans-serif` : 'inherit';
 
 	const  loadData = async () =>{
-			try {
-				await configManager.initAppScope();
-				const loadedFile = await configManager.loadConfigFromDisk();
-				if (Array.isArray(loadedFile)) {
-					setMatches(loadedFile);
-				}
-			} catch (error) {
-				console.error("Failed to load matches:", error);
-				showToast("赛制加载发生错误", 'error');
+		try {
+			await configManager.initAppScope();
+			const loadedFile = await configManager.loadConfigFromDisk();
+			if (Array.isArray(loadedFile)) {
+				setMatches(loadedFile);
 			}
+		} catch (error) {
+			console.error("Failed to load matches:", error);
+			showToast("赛制加载发生错误", 'error');
 		}
+	};
 
 	const handleSelectMatch = (id: string, index: number) => {
 		const isClosing = id === selectedId; 
@@ -236,6 +246,40 @@ function Runner() {
 		document.addEventListener('fullscreenchange', handleFullScreenChange);
 		return () => document.removeEventListener('fullscreenchange', handleFullScreenChange);
 	}, []);
+
+	useEffect(() => {
+		const reloadSettings = () => {
+			try {
+				const latestSettings = JSON.parse(localStorage.getItem('app_settings') || "{}");
+				setSettings(latestSettings);
+			} catch (e) {
+				console.error("Reload settings faild: ", e);
+			}
+		};
+		window.addEventListener('app_settings_updated', reloadSettings);
+		reloadSettings();
+		return () => {
+			window.removeEventListener('app_settings_updated', reloadSettings);
+		};
+	}, []);
+
+	useEffect(() => {
+		const loadBg = async () => {
+			if (settings.background) {
+				try {
+					const appData = await appDataDir();
+					const absolutePath = await join(appData, "imported_assets", settings.background);
+
+					const safeUrl = convertFileSrc(absolutePath);
+					setBgUrl(safeUrl);
+				} catch (e) {
+					console.error("转换背景图路径失败:", e);
+				}
+			}
+		};
+
+		loadBg();
+	}, [settings.background]);
 
 	useEffect(() => {
 	const handleKeyDown  = (e: KeyboardEvent) => {
@@ -489,8 +533,8 @@ function Runner() {
 					ref={scrollContainer}
 					style={{ 
 						position: "relative",
-						width: "100%", 
-						height: "100%", 
+						width: "100%",
+						height: "100%",
 						overflowY: "auto",
 						overflowX: "hidden",
 						padding: "25px 4vw 700px 4vw", 
@@ -516,7 +560,15 @@ function Runner() {
 						</button>
 					</div>
 					
-					<div style={{ display: "flex", flexDirection: "column", gap: "16px", maxWidth: "1200px", margin: "0 auto" }}>
+					<div 
+						style={{
+							display: "flex",
+							flexDirection: "column",
+							gap: "16px",
+							maxWidth: "1200px",
+							margin: "0 auto"
+						}}
+					>
 						{matches.map((m, index) => (
 							<MatchCard 
 								key={m.id}
@@ -552,7 +604,15 @@ function Runner() {
 		<div 
 			className="container" 
 			ref={fullScreenContainer}
-			style={{ position: "relative" }}
+			style={{ 
+				position: "relative",
+				backgroundImage: bgUrl ? `url("${bgUrl}")` : 'none',
+				backgroundSize: "cover",
+				backgroundPosition: "center",
+				backgroundRepeat: "no-repeat",
+				backgroundColor: "var(--bg)",
+				fontFamily: `${font}`
+			}}
 		>
 			<div
 				style={{

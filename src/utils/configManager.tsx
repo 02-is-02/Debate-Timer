@@ -4,7 +4,25 @@ import { join } from "@tauri-apps/api/path";
 import { invoke } from "@tauri-apps/api/core";
 
 const CONFIG_FILE_NAME = 'user-match-config.json';
-const PATH_STORAGE_KEY = 'debate_timer_save_dir';
+
+function getSaveDir() {
+	try {
+		return JSON.parse(localStorage.getItem('app_settings') || "{}")?.saveDir ?? '';
+	} catch {
+		return '';
+	}
+};
+
+function updateSaveDir(value: string) {
+	try {
+		const settings = JSON.parse(localStorage.getItem('app_settings') || "{}");
+		const updatedSettings = {...settings, 'saveDir': value};
+		localStorage.setItem('app_settings', JSON.stringify(updatedSettings));
+	} catch (e) {
+		emitToast("更新存储路径失败", 'error');
+		console.log("Update save directory failed: ", e)
+	}
+};
 
 function emitToast( message: string, severity: 'success' | 'error' | 'warning' | 'info' ) {
 	window.dispatchEvent(new CustomEvent('trigger-global-toast', {
@@ -24,7 +42,7 @@ async function askRustToAllowPath(path: string) {
 
 export async function checkDefaultPath() {
 	try {
-		let saveDirPath = localStorage.getItem(PATH_STORAGE_KEY);
+		let saveDirPath = getSaveDir();
 
 		if (!saveDirPath) {
 			const selectedPath = await openDialog({
@@ -42,7 +60,7 @@ export async function checkDefaultPath() {
 
 			await askRustToAllowPath(saveDirPath)
 
-			localStorage.setItem(PATH_STORAGE_KEY, saveDirPath);
+			updateSaveDir(saveDirPath);
 
 			return false;
 		}
@@ -56,7 +74,7 @@ export async function checkDefaultPath() {
 
 export async function loadConfigFromDisk() {
 	try {
-		const saveDirPath = localStorage.getItem(PATH_STORAGE_KEY);
+		const saveDirPath = getSaveDir();
 
 		if (!saveDirPath) return [];
 
@@ -75,7 +93,7 @@ export async function loadConfigFromDisk() {
 
 export async function saveConfigToDisk(newConfig: any[]) {
 	try {
-		let saveDirPath = localStorage.getItem(PATH_STORAGE_KEY);
+		let saveDirPath = getSaveDir();
 
 		if (!saveDirPath) {
 			const selectedPath = await openDialog({
@@ -93,7 +111,7 @@ export async function saveConfigToDisk(newConfig: any[]) {
 
 			await askRustToAllowPath(saveDirPath)
 
-			localStorage.setItem(PATH_STORAGE_KEY, saveDirPath);
+			updateSaveDir(saveDirPath);
 		}
 
 		const fullFilePath = await join(saveDirPath, CONFIG_FILE_NAME);
@@ -135,16 +153,20 @@ export async function exportConfig(configData: any[]) {
 	}
 }
 
-export async function resetSaveLocation() {
-	localStorage.removeItem(PATH_STORAGE_KEY);
-	emitToast("已清除默认存储位置。下次保存将重新询问！", 'success');
-}
-
 export async function initAppScope() {
-	const savedDirPath = localStorage.getItem(PATH_STORAGE_KEY);
-	if (savedDirPath) {
-		console.log("检测到历史存储路径，正在自动重新向 Rust 申请 Scope 授权...");
-		await askRustToAllowPath(savedDirPath);
+	const settings = JSON.parse(localStorage.getItem('app_settings') || '{}');
+	
+	if (settings.saveDir) {
+		await invoke('allow_custom_path', { path: settings.saveDir });
+	}
+	if (settings.background) {
+		await invoke('allow_custom_path', { path: settings.background });
+	}
+	if (settings.singleRing) {
+		await invoke('allow_custom_path', { path: settings.singleRing });
+	}
+	if (settings.doubleRing) {
+		await invoke('allow_custom_path', { path: settings.doubleRing });
 	}
 }
 

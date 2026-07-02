@@ -1,86 +1,123 @@
 import { useEffect, useRef, useState } from 'react';
-import { TextField, MenuItem, Select, Fab, Switch, CircularProgress } from '@mui/material';
+import { invoke } from '@tauri-apps/api/core';
+import { open } from '@tauri-apps/plugin-dialog';
+import { TextField, MenuItem, Select, Fab, Switch, CircularProgress, Button, Divider } from '@mui/material';
 import { useToast } from '../utils/Context';
-import { RouteOff } from 'lucide-react';
+import { RouteOff, Upload } from 'lucide-react';
 
-const PATH_STORAGE_KEY = 'debate_timer_save_dir';
+const DEFAULT_SETTINGS = {
+	apiKey: '',
+	model: 'gemini-2.5-flash',
+	autoCreateRoom: false,
+	saveDir: '',
+	background: '',
+	singleRing: '',
+	doubleRing: '',
+	font: ''
+}
 
 export default function Settings() {
 	const { showToast } = useToast();
-	
-	const [apiKey, setApiKey] = useState(localStorage.getItem('gemini_api_key') || '');
-	const [model, setModel] = useState(localStorage.getItem('gemini_model') || 'Gemini 2.5 Flash');
-	const [autoCreateRoom, setAutoCreateRoom] = useState(localStorage.getItem('auto_create_room') === "true" || false)
 
 	const [isSaving, setIsSaving] = useState(false);
-
+	const [fontList, setFontList] = useState<string[]>([]);
+	
 	const typingTimeRef = useRef<ReturnType<typeof setTimeout> | null>(null);
 
-	useEffect(() => {
-		const savedKey = localStorage.getItem('gemini_api_key') || '';
-		const savedModel = localStorage.getItem('gemini_model') || 'Gemini 2.5 Flash';
-		const savedAuto = localStorage.getItem('auto_create_room') === "true";
-
-		if (apiKey === savedKey && model === savedModel && autoCreateRoom === savedAuto) {
-			return;
+	const [settings, setSettings] = useState(() => {
+		try {
+			const saved = localStorage.getItem('app_settings');
+			return saved ? {...DEFAULT_SETTINGS, ...JSON.parse(saved)} : DEFAULT_SETTINGS;
+		} catch {
+			showToast("读取自定义设置失败，应用默认设置", "error");
+			return DEFAULT_SETTINGS;
 		}
+	});
 
+	const updateSetting = (key: keyof typeof DEFAULT_SETTINGS, value: any) => {
 		setIsSaving(true);
-		if (typingTimeRef.current) clearTimeout(typingTimeRef.current);
+		setSettings((prev: typeof DEFAULT_SETTINGS) => ({ ...prev, [key]: value }));
+	};
 
-		typingTimeRef.current = setTimeout(() => {
-			try {
-				localStorage.setItem('gemini_api_key', apiKey);
-				localStorage.setItem('gemini_model', model);
-				localStorage.setItem('auto_create_room', autoCreateRoom.toString());
+	const saveImported = async (mimeType: string, settingKey: keyof typeof DEFAULT_SETTINGS) => {
+		try {
+			const selectedPath = await open({
+				multiple: false,
+				filters: [{ name: "自定义导入", extensions: mimeType.split(',') }]
+			});
 
-				showToast("设置已保存", "success");
-			} catch (error) {
-				console.log("Failed to save settings: ", error);
-				showToast(`设置保存发生错误:\n${error}`, 'error');
-			} finally {
-				setIsSaving(false);
+			if (!selectedPath) return;
+
+			const savedNewPath = await invoke<string>('save_imported_file', {
+				sourcePath: selectedPath
+			});
+
+			if (savedNewPath) {
+				await invoke('allow_custom_path', { path: savedNewPath });
+				updateSetting(settingKey, savedNewPath);
+				
+				showToast("导入成功", "success");
+				console.log("File saved to: ", savedNewPath);
 			}
-		}, 1500);
+		} catch (e) {
+			showToast("文件导入失败", "error")
+			console.error("File import Failed: ", e);
+		}
+	};
+
+	useEffect(() => {
+		const fetchFonts = async () => {
+			try {
+				const fonts = await invoke<string[]>('get_system_fonts');
+				setFontList(fonts);
+			} catch (e) {
+				console.log("Get font failed: ", e)
+			}
+		};
+		fetchFonts();
+	}, [])
+
+	useEffect(() => {
+		const performSave = () => {
+			localStorage.setItem('app_settings', JSON.stringify(settings));
+			setIsSaving(false);
+			console.log("Settings saved");
+			window.dispatchEvent(new Event('app_settings_updated'));
+		};
+
+		if (typingTimeRef.current) clearTimeout(typingTimeRef.current);
+		
+		typingTimeRef.current = setTimeout(performSave, 1500);
+		window.addEventListener('beforeunload', performSave);
 
 		return () => {
 			if (typingTimeRef.current) clearTimeout(typingTimeRef.current);
+			window.removeEventListener('beforeunload', performSave);
+			performSave();
 		};
-	}, [apiKey, model, autoCreateRoom]);
+	}, [settings]);
 
 	const handleResetPath = () => {
-		localStorage.setItem(PATH_STORAGE_KEY, "")
+		setSettings((prev: typeof DEFAULT_SETTINGS) => ({ ...prev, 'saveDir': '' }));
+		showToast("存储路径已重置", "success");
 	};
 
 	const renderDivider = ( title: string) => {
 		return (
-			<div >
-				<div className="stage-divider">
-					<div className="stage-divider-line"/>
-				</div>
+			<Divider
+				sx={{ margin: "20px 0 0 0" }}
+			>
 				<h3 style={{ color: "white", margin: "0 0 0 1vw" }}>
 					{title}
 				</h3>
-			</div>
+			</Divider>
 		)
 	};
-
-	useEffect(() => {
-		return () => {
-			if (typingTimeRef.current) clearTimeout(typingTimeRef.current);
-
-			if (isSaving) {
-				localStorage.setItem('gemini_api_key', apiKey);
-				localStorage.setItem('gemini_model', model);
-				localStorage.setItem('auto_create_room', autoCreateRoom.toString());
-			}
-		};
-	}, []);
 
 	return (
 		<div style={{ flex: 1 }} className="settings-container hide-scrollbar">
 			<div style={{ alignItems: "baseline" }} className="settings-group long">
-				<h1 style={{ color: "white" }}>
+				<h1 style={{ margin: 0, color: "white" }}>
 					设置
 				</h1>
 				<label className="mini-label">
@@ -90,69 +127,154 @@ export default function Settings() {
 					{isSaving ? "正在保存，请勿关闭页面" : "已保存"}
 				</label>
 			</div>
-			{renderDivider("计时显示相关")}
-			<div className="settings-group long">
-				<label className="mini-label">
-					开启比赛默认创建房间：
-				</label>
-				<Switch
-					size="small"
-					checked={autoCreateRoom}
-					onChange={(e) => setAutoCreateRoom(e.target.checked)}
-				/>
-			</div>
+			<div className="hide-scrollbar" style={{ overflowY: "auto" }}>
+				{renderDivider("计时显示相关")}
+				<div className="settings-group complex">
+					<label className="mini-label">
+						背景图片
+					</label>
+					
+					<div className="settings-group long" style={{ padding: 0 }}>
+						<TextField
+							size="small"
+							aria-readonly
+							sx={{ pointerEvents: "none", width: "50%" }}
+							value={settings.background ? settings.background : "默认"}
+							variant="standard"
+						/>
+						<div>
+							<Button size="small" startIcon={<Upload size={16}/>} onClick={() => saveImported('png,jpg,jpeg', 'background')}>
+								导入
+							</Button>
+							<Button color="error" size="small" disabled={!settings.background} onClick={() => updateSetting('background', '')}>
+								清除
+							</Button>
+						</div>
+					</div>
+				</div>
+				<div className="settings-group complex">
+					<label className="mini-label">
+						第一声铃响提示：
+					</label>
+					<div className="settings-group long" style={{ padding: 0 }}>
+						<TextField
+							size="small"
+							aria-readonly
+							sx={{ pointerEvents: "none", width: "50%" }}
+							value={settings.singleRing ? settings.singleRing : "默认"}
+							variant="standard"
+						/>
+						<div>
+							<Button size="small" startIcon={<Upload size={16}/>} onClick={() => saveImported('mp3,wav,m4a', 'singleRing')}>
+								导入
+							</Button>
+							<Button color="error" size="small" disabled={!settings.singleRing} onClick={() => updateSetting('singleRing', '')}>
+								清除
+							</Button>
+						</div>
+					</div>
+				</div>
+				<div className="settings-group complex">
+					<label className="mini-label">
+						第二声铃响提示：
+					</label>
+					<div className="settings-group long" style={{ padding: 0 }}>
+						<TextField
+							size="small"
+							aria-readonly
+							sx={{ pointerEvents: "none", width: "50%" }}
+							value={settings.doubleRing ? settings.doubleRing : "默认"}
+							variant="standard"
+						/>
+						<div>
+							<Button size="small" startIcon={<Upload size={16}/>} onClick={() => saveImported('mp3,wav,m4a', 'doubleRing')}>
+								导入
+							</Button>
+							<Button color="error" size="small" disabled={!settings.doubleRing} onClick={() => updateSetting('doubleRing', '')}>
+								清除
+							</Button>
+						</div>
+					</div>
+				</div>
+				<div className="settings-group">
+					<label className="mini-label">
+						计时器辩题，标题及队名字体(空则使用默认字体)：
+					</label>
+					<Select 
+						size="small"
+						value={settings.font}
+						variant="standard"
+						displayEmpty
+						style={{ fontFamily: settings.font, minWidth: '200px' }}
+						onChange={(e) => updateSetting('font', e.target.value)}
+					>
+						<MenuItem value="">
+							默认
+						</MenuItem>
+						{fontList.map(font => (
+							<MenuItem
+								key={font}
+								value={font}
+								style={{ fontFamily: font }}
+							>
+								{font}
+							</MenuItem>
+						))}
+					</Select>
+				</div>
 
-			{renderDivider("AI生成相关")}
-			<div className="settings-group">
-				<label className="mini-label">
-					Gemini API Key （可从 Google AI Studio 获取）：
-				</label>
-				<TextField
-					size="small"
-					type="password"
-					value={apiKey}
-					variant="standard"
-					onChange={(e) => setApiKey(e.target.value)}
-					placeholder="AIzaSy..."
-				/>
-			</div>
-			
-			<div className="settings-group">
-				<label className="mini-label">
-					生成赛制使用的模型：
-				</label>
-				<Select 
-					size="small"
-					value={model}
-					variant="standard"
-					onChange={(e) => setModel(e.target.value)}
-				>
-					<MenuItem value="gemini-2.5-flash">Gemini 2.5 Flash</MenuItem>
-					<MenuItem value="gemini-2.5-pro">Gemini 2.5 Pro</MenuItem>
-					<MenuItem value="gemini-2.0-flash">Gemini 2.0 Flash</MenuItem>
-					<MenuItem value="gemini-flash-latest">Gemini Flash</MenuItem>
-				</Select>
-			</div>
-			{renderDivider("存储相关")}
-			<div className="settings-group long">
-				<label className="mini-label">
-					点击重置默认存储路径：
-				</label>
-				<Fab sx={{ margin: "0", padding: "15px", gap: "10px" }}size="small" color="error" variant="extended" aria-label="reset" onClick={handleResetPath}>
-					<RouteOff/>重置
-				</Fab>
-			</div>
+				{renderDivider("AI生成相关")}
+				<div className="settings-group">
+					<label className="mini-label">
+						Gemini API Key （可从 Google AI Studio 获取）：
+					</label>
+					<TextField
+						size="small"
+						type="password"
+						value={settings.apiKey}
+						variant="standard"
+						onChange={(e) => updateSetting('apiKey', e.target.value)}
+						placeholder="AIzaSy..."
+					/>
+				</div>
+				
+				<div className="settings-group">
+					<label className="mini-label">
+						生成赛制使用的模型：
+					</label>
+					<Select 
+						size="small"
+						value={settings.model}
+						variant="standard"
+						onChange={(e) => updateSetting('model', e.target.value)}
+					>
+						<MenuItem value="gemini-2.5-flash">Gemini 2.5 Flash</MenuItem>
+						<MenuItem value="gemini-2.5-pro">Gemini 2.5 Pro</MenuItem>
+						<MenuItem value="gemini-2.0-flash">Gemini 2.0 Flash</MenuItem>
+						<MenuItem value="gemini-flash-latest">Gemini Flash</MenuItem>
+					</Select>
+				</div>
+				{renderDivider("存储相关")}
+				<div className="settings-group long">
+					<label className="mini-label">
+						点击重置默认存储路径：
+					</label>
+					<Fab sx={{ margin: "0", padding: "15px", gap: "10px" }}size="small" color="error" variant="extended" aria-label="reset" onClick={handleResetPath}>
+						<RouteOff/>重置
+					</Fab>
+				</div>
 
-			{renderDivider("房间设置")}
-			<div className="settings-group long">
-				<label className="mini-label">
-					开启比赛默认创建房间：
-				</label>
-				<Switch
-					size="small"
-					checked={autoCreateRoom}
-					onChange={(e) => setAutoCreateRoom(e.target.checked)}
-				/>
+				{renderDivider("房间设置")}
+				<div className="settings-group long">
+					<label className="mini-label">
+						开启比赛默认创建房间：
+					</label>
+					<Switch
+						size="small"
+						checked={settings.autoCreateRoom}
+						onChange={(e) => updateSetting('autoCreateRoom', e.target.checked)}
+					/>
+				</div>
 			</div>
 		</div>
 	);

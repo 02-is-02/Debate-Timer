@@ -167,7 +167,7 @@ pub async fn generate_stage(payload: GeneratePayload) -> Result<DebateStages, St
 			if status.as_u16() == 429 || status.as_u16() >= 500 {
 				return Err("模型处在高峰期".to_string());
 			} else {
-				return Err("网络波动".to_string());
+				return Err("网络波动或无效API Key".to_string());
 			}
 		}
 

@@ -2,10 +2,11 @@ import React, { useState, useEffect } from "react";
 import { Outlet, useLocation, useOutletContext, useNavigate } from "react-router-dom";
 import { ToastProvider } from "../utils/Context";
 import { ThemeProvider } from "@emotion/react";
-import { createTheme } from "@mui/material";
+import { CircularProgress, createTheme } from "@mui/material";
 import MenuSidebar from "./Sidebar";
 import FileDrop from "../components/FileDrop";
 import { DebateStages } from "../schema";
+import { initAppScope } from "../utils/configManager";
 
 const darkTheme = createTheme({
 	palette: {
@@ -82,32 +83,79 @@ function GlobalDropCatcher({ allowDndWindow }: { allowDndWindow: boolean }) {
 	return <FileDrop isActive={allowDndWindow} onDrop={handleGlobalDrop} />
 }
 
+const sleep = (ms: number) => new Promise(resolve => setTimeout(resolve, ms));
+
 export default function Layout() {
 	const [isFolded, setIsFolded] = useState(() => {
 		return localStorage.getItem("sidebar_folded") === "true";
 	});
 	const [allowDndWindow, setAllowDndWindow] = useState(true);
 	const [isRunning, setIsRunning] = useState(false);
+	const [isReady, setIsReady] = useState(false);
 
 	const currPage = useLocation().pathname;
+
+	useEffect(() => {
+		const initialize = async () => {
+			try {
+				await initAppScope(); 
+				await sleep(1000);
+			} catch (e) {
+				console.error("初始化权限失败", e);
+			} finally {
+				setIsReady(true);
+			}
+		};
+
+		initialize();
+	}, []);
 
 	useEffect(() => {
 		localStorage.setItem("sidebar_folded", isFolded.toString());
 	}, [isFolded])
 
-	return (
-		<ThemeProvider theme={darkTheme}>
-			<ToastProvider>
-				<GlobalDropCatcher allowDndWindow={allowDndWindow} />
+	if (!isReady) {
+		return (
+			<div 
+				style={{
+					display: "flex",
+					flexDirection: "column",
+					gap: "15px",
+					height: "100vh",
+					width: "100vw",
+					backgroundColor: "var(--bg)",
+					alignItems: "center",
+					justifyContent: "center"
+				}}
+			>
+				<CircularProgress
+					sx={{
+						color: "#656b6ed2"
+					}}
+					thickness={2}
+					size={80}
+				/>
+				<label className="mini-label">
+					加载中...
+				</label>
+			</div>
+		);
+	}
 
-				<div className="main-container">
-					{!isRunning && <MenuSidebar isFolded={isFolded} toggleFold={() => setIsFolded(!isFolded)} activeRow={currPage}/>}
-					<div style={{ flex: 1, minWidth: 0, position: "relative" }}>
-						<Outlet context={{setAllowDndWindow, isRunning, setIsRunning}}/>
+	return (
+		<div className="fade-in-wrapper">
+			<ThemeProvider theme={darkTheme}>
+				<ToastProvider>
+					<GlobalDropCatcher allowDndWindow={allowDndWindow} />
+					<div className="main-container">
+						{!isRunning && <MenuSidebar isFolded={isFolded} toggleFold={() => setIsFolded(!isFolded)} activeRow={currPage}/>}
+						<div style={{ flex: 1, minWidth: 0, position: "relative" }}>
+							<Outlet context={{setAllowDndWindow, isRunning, setIsRunning}}/>
+						</div>
 					</div>
-				</div>
-			</ToastProvider>
-		</ThemeProvider>
+				</ToastProvider>
+			</ThemeProvider>
+		</div>
 	)
 }
 

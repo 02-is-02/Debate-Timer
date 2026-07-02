@@ -17,7 +17,14 @@ const MatchCard = forwardRef<HTMLDivElement, MatchCardProps>(
 		const [title, setTitle] = useState("");
 		const [leftName, setLeftName] = useState("");
 		const [rightName, setRightName] = useState("");
-		const [createRoom, setCreateRoom] = useState(localStorage.getItem("auto_create_room") === "true");
+		const [createRoom, setCreateRoom] = useState(() => {
+			try {
+				const savedString = localStorage.getItem('app_settings') || '{}';
+				return JSON.parse(savedString)?.autoCreateRoom ?? false;
+			} catch {
+				return false;
+			}
+		});
 
 		if (isExpanded && !shouldRender) {
 			setShouldRender(true);

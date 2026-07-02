@@ -22,6 +22,7 @@ html, body {
 	padding: 0;
 	width: 100%;
 	height: 100%;
+	background-color: var(--bg);
 	overflow: hidden; 
 	box-sizing: border-box; 
 }
@@ -63,6 +64,13 @@ textarea,
 	height: 100%; 
 	overflow-y: auto;
 	position: relative;
+}
+
+.fade-in-wrapper {
+	animation: smoothFadeIn 0.8s ease-in-out forwards;
+	height: 100vh;
+	width: 100vw;
+	background-color: var(--bg);
 }
 
 .btn {
@@ -421,21 +429,15 @@ textarea,
 	width: 100%;
 }
 
+.settings-group.complex {
+	flex-direction: column;
+	align-items: start;
+	justify-content: space-between;
+	width: 100%;
+}
+
 .settings-group .mini-label {
 	padding-left: 0;
-}
-
-.settings-container .stage-divider {
-	cursor: default;
-}
-
-.settings-container .stage-divider-line {
-	background-color: var(--alt-blue);
-}
-
-.settings-container .stage-divider:hover .stage-divider-line {
-	height: 1px;
-	background-color: var(--alt-blue);
 }
 
 .runner-wrapper {
@@ -685,4 +687,9 @@ textarea,
 		opacity: 1;
 		transform: translateY(0);
 	}
+}
+
+@keyframes smoothFadeIn {
+	0% { opacity: 0; }
+	100% { opacity: 1; }
 }
