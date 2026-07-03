@@ -37,7 +37,7 @@ pub async fn list_remote_rooms() -> Result<Vec<RemoteRoomInfo>, String> {
 	let rest_token = std::env!("UPSTASH_REDIS_REST_TOKEN");
 	let client = Client::new();
 
-	println!("Pulling URL:", rest_url);
+	println!("Pulling URL: {}", rest_url);
 
 	let keys_url = format!("{}/keys/debate:room:R-*", rest_url);
 	let keys_res = client.get(&keys_url)
