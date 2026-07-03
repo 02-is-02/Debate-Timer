@@ -161,7 +161,23 @@ function Runner() {
 	};
 
 	const handleExit = async () => {
+		if (isHost && activeRoomId) {
+			try {
+				const endPacket: RoomEvent = { type: "end" };
+				await invoke('broadcast_packet', {
+					rawJsonStr: JSON.stringify(endPacket)
+				});
+				console.log("Broadcasted Exit");
+			} catch (e) {
+				console.error("Broadcast failed:", e);
+			}
+		}
+
+		leftTimerRef.current?.stopT();
+		rightTimerRef.current?.stopT();
+
 		setIsPlaying(false);
+		setActiveSide("none");
 		setCurrIndex(0);
 		if (document.fullscreenElement) {
 			document.exitFullscreen();
@@ -401,12 +417,29 @@ function Runner() {
 	useEffect(() => {
 		if (!isPlaying || isHost) return;
 		let unlisten: UnlistenFn | undefined;
+		let watchdogTimer: number | null = null;
+
+		const resetWatchdog = () => {
+			if (watchdogTimer !== null) {
+				clearTimeout(watchdogTimer);
+			}
+			watchdogTimer = window.setTimeout(() => {
+				console.warn("hearbeat timeout, no package received");
+				showToast("连接超时，与房主断开连接", "error");
+				handleExit();
+			}, 10000);
+		};
+
 		const setupListener = async () => {
 			unlisten = await listen<string>('room-event', (event) => {
 				try {
+					resetWatchdog();
+
 					console.log(event.payload);
 					const data: RoomEvent = JSON.parse(event.payload);
+
 					if (data.type === "end") {handleExit(); return;};
+
 					setCurrIndex(data.stage);
 					setActiveSide(data.activeSide);
 					if (data.leftTime !== undefined) {
@@ -415,6 +448,7 @@ function Runner() {
 							leftTimerRef.current?.setTime(data.leftTime);
 						}
 					}
+
 					if (data.rightTime !== undefined) {
 						const localright = rightTimerRef.current?.getTime();
 						if (localright !== undefined && Math.abs(localright - data.rightTime) > 1) {
@@ -425,11 +459,13 @@ function Runner() {
 					console.error("sync failed: ", e);
 				}
 			});
+			resetWatchdog();
 		};
 
 		setupListener();
 		return () => {
 			if (unlisten) unlisten();
+			if (watchdogTimer !== null) {clearTimeout(watchdogTimer);}
 		};
 	}, [isPlaying, isHost, setActiveSide]);
 

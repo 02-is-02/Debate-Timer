@@ -3,7 +3,7 @@ import { invoke } from '@tauri-apps/api/core';
 import { open } from '@tauri-apps/plugin-dialog';
 import { TextField, MenuItem, Select, Fab, Switch, CircularProgress, Button, Divider } from '@mui/material';
 import { useToast } from '../utils/Context';
-import { RouteOff, Upload } from 'lucide-react';
+import { RouteOff, Trash2, Upload } from 'lucide-react';
 
 const DEFAULT_SETTINGS = {
 	apiKey: '',
@@ -13,6 +13,7 @@ const DEFAULT_SETTINGS = {
 	background: '',
 	singleRing: '',
 	doubleRing: '',
+	ticking: '',
 	font: ''
 }
 
@@ -133,7 +134,6 @@ export default function Settings() {
 					<label className="mini-label">
 						背景图片
 					</label>
-					
 					<div className="settings-group long" style={{ padding: 0 }}>
 						<TextField
 							size="small"
@@ -142,19 +142,41 @@ export default function Settings() {
 							value={settings.background ? settings.background : "默认"}
 							variant="standard"
 						/>
-						<div>
-							<Button size="small" startIcon={<Upload size={16}/>} onClick={() => saveImported('png,jpg,jpeg', 'background')}>
-								导入
-							</Button>
-							<Button color="error" size="small" disabled={!settings.background} onClick={() => updateSetting('background', '')}>
-								清除
-							</Button>
+						<div style={{ display: "flex", gap: "15px" }}>
+							<Fab sx={{ margin: "0", padding: "15px", gap: "10px" }} size="small" color="primary" variant="extended" aria-label="reset" onClick={() => saveImported('png,jpg,jpeg', 'background')}>
+								<Upload />导入
+							</Fab>
+							<Fab sx={{ margin: "0", padding: "15px", gap: "10px" }} disabled={!settings.background} size="small" color="error" variant="extended" aria-label="reset" onClick={() => updateSetting('background', '')}>
+								<Trash2 />清除
+							</Fab>
 						</div>
 					</div>
 				</div>
 				<div className="settings-group complex">
 					<label className="mini-label">
-						第一声铃响提示：
+						五秒倒计时提示音：
+					</label>
+					<div className="settings-group long" style={{ padding: 0 }}>
+						<TextField
+							size="small"
+							aria-readonly
+							sx={{ pointerEvents: "none", width: "50%" }}
+							value={settings.ticking ? settings.ticking : "默认"}
+							variant="standard"
+						/>
+						<div style={{ display: "flex", gap: "15px" }}>
+							<Fab sx={{ margin: "0", padding: "15px", gap: "10px" }} size="small" color="primary" variant="extended" aria-label="reset" onClick={() => saveImported('mp3,wav,m4a', 'ticking')}>
+								<Upload />导入
+							</Fab>
+							<Fab sx={{ margin: "0", padding: "15px", gap: "10px" }} disabled={!settings.ticking} size="small" color="error" variant="extended" aria-label="reset" onClick={() => updateSetting('ticking', '')}>
+								<Trash2 />清除
+							</Fab>
+						</div>
+					</div>
+				</div>
+				<div className="settings-group complex">
+					<label className="mini-label">
+						第一声铃响提示音：
 					</label>
 					<div className="settings-group long" style={{ padding: 0 }}>
 						<TextField
@@ -164,19 +186,19 @@ export default function Settings() {
 							value={settings.singleRing ? settings.singleRing : "默认"}
 							variant="standard"
 						/>
-						<div>
-							<Button size="small" startIcon={<Upload size={16}/>} onClick={() => saveImported('mp3,wav,m4a', 'singleRing')}>
-								导入
-							</Button>
-							<Button color="error" size="small" disabled={!settings.singleRing} onClick={() => updateSetting('singleRing', '')}>
-								清除
-							</Button>
+						<div style={{ display: "flex", gap: "15px" }}>
+							<Fab sx={{ margin: "0", padding: "15px", gap: "10px" }} size="small" color="primary" variant="extended" aria-label="reset" onClick={() => saveImported('mp3,wav,m4a', 'singleRing')}>
+								<Upload />导入
+							</Fab>
+							<Fab sx={{ margin: "0", padding: "15px", gap: "10px" }} disabled={!settings.singleRing} size="small" color="error" variant="extended" aria-label="reset" onClick={() => updateSetting('singleRing', '')}>
+								<Trash2 />清除
+							</Fab>
 						</div>
 					</div>
 				</div>
 				<div className="settings-group complex">
 					<label className="mini-label">
-						第二声铃响提示：
+						第二声铃响提示音：
 					</label>
 					<div className="settings-group long" style={{ padding: 0 }}>
 						<TextField
@@ -186,13 +208,13 @@ export default function Settings() {
 							value={settings.doubleRing ? settings.doubleRing : "默认"}
 							variant="standard"
 						/>
-						<div>
-							<Button size="small" startIcon={<Upload size={16}/>} onClick={() => saveImported('mp3,wav,m4a', 'doubleRing')}>
-								导入
-							</Button>
-							<Button color="error" size="small" disabled={!settings.doubleRing} onClick={() => updateSetting('doubleRing', '')}>
-								清除
-							</Button>
+						<div style={{ display: "flex", gap: "15px" }}>
+							<Fab sx={{ margin: "0", padding: "15px", gap: "10px" }} size="small" color="primary" variant="extended" aria-label="reset" onClick={() => saveImported('mp3,wav,m4a', 'doubleRing')}>
+								<Upload />导入
+							</Fab>
+							<Fab sx={{ margin: "0", padding: "15px", gap: "10px" }} disabled={!settings.doubleRing} size="small" color="error" variant="extended" aria-label="reset" onClick={() => updateSetting('doubleRing', '')}>
+								<Trash2 />清除
+							</Fab>
 						</div>
 					</div>
 				</div>
@@ -259,8 +281,8 @@ export default function Settings() {
 					<label className="mini-label">
 						点击重置默认存储路径：
 					</label>
-					<Fab sx={{ margin: "0", padding: "15px", gap: "10px" }}size="small" color="error" variant="extended" aria-label="reset" onClick={handleResetPath}>
-						<RouteOff/>重置
+					<Fab sx={{ margin: "0", padding: "15px", gap: "10px" }} size="small" color="error" variant="extended" aria-label="reset" onClick={handleResetPath}>
+						<RouteOff />重置
 					</Fab>
 				</div>
 

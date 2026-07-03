@@ -37,6 +37,17 @@ const darkTheme = createTheme({
 				}
 			}
 		},
+		MuiFab: {
+			styleOverrides: {
+				root: {
+				'&.Mui-disabled': {
+					backgroundColor: 'rgba(255, 255, 255, 0.12)',
+					color: 'rgba(255, 255, 255, 0.3)',
+					boxShadow: 'none',
+				},
+				},
+			},
+		},
 		MuiButton: {
 			styleOverrides: {
 				root: {
@@ -113,6 +124,24 @@ export default function Layout() {
 	useEffect(() => {
 		localStorage.setItem("sidebar_folded", isFolded.toString());
 	}, [isFolded])
+
+	useEffect(() => {
+		const disableBrowserReload = (e: KeyboardEvent) => {
+			if (e.key === 'F5') {
+				e.preventDefault();
+				console.log("Denied f5 refresh");
+			}
+			if ((e.ctrlKey || e.metaKey) && (e.key === 'r' || e.key === 'R')) {
+				e.preventDefault();
+				console.log("Denied hotkey refresh");
+			}
+		};
+
+		window.addEventListener('keydown', disableBrowserReload);
+		return () => {
+			window.removeEventListener('keydown', disableBrowserReload);
+		};
+	}, []);
 
 	if (!isReady) {
 		return (

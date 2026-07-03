@@ -1,10 +1,12 @@
-import { useState, useEffect, forwardRef, useImperativeHandle } from "react";
+import { useState, useEffect, forwardRef, useImperativeHandle, useRef } from "react";
 import useSound from "use-sound";
-import bellSfx from '../assets/bell.mp3';
-import tickSfx from '../assets/tick.mp3';
+import { appDataDir, join } from "@tauri-apps/api/path";
+import { convertFileSrc } from "@tauri-apps/api/core";
+import defaultBellSfx from '../assets/bell.mp3';
+import defaultTickSfx from '../assets/tick.mp3';
 
 interface TimerProps {
-	title?: string; //timer title
+	title?: string;
 	initialSeconds: number;
 	isRunning: boolean;
 	isHost: boolean;
@@ -15,18 +17,99 @@ interface TimerProps {
 export interface TimerRef {
 	setTime: (seconds: number) => void;
 	getTime: () => number;
+	stopT: () => void;
 }
 
 const Timer = forwardRef<TimerRef, TimerProps>((props, ref) => {
 	const [timeLeft, setTimeLeft] = useState(props.initialSeconds);
 	const [reseting, setReseting] = useState(false);
 	const [sec, setSec] = useState(props.initialSeconds);
-	const [bell] = useSound(bellSfx, { volume: 0.8 });
-	const [tick, { stop: stopTick }] = useSound(tickSfx, { volume: 0.5 });
+
+	const [singleRingSrc, setSingleRingSrc] = useState<string>(defaultBellSfx);
+	const [doubleRingSrc, setDoubleRingSrc] = useState<string>(defaultBellSfx);
+	const [tickSrc, setTickSrc] = useState<string>(defaultTickSfx);
+
+	const [playSingleRing] = useSound(singleRingSrc, { volume: 0.8 });
+	const [playDoubleRing] = useSound(doubleRingSrc, { volume: 0.8 });
+	const [playTick, { stop: stopTick }] = useSound(tickSrc, { volume: 0.5 });
+
+	const clickTimeoutRef = useRef<number | null>(null);
+	const lastActionTimeRef = useRef<number>(0);
+
+	const handleResetClick = () => {
+		if (clickTimeoutRef.current) {
+			clearTimeout(clickTimeoutRef.current);
+		}
+		clickTimeoutRef.current = window.setTimeout(() => {
+			props.onPause();
+			setReseting(true);
+		}, 200);
+	};
+
+	const handleResetDoubleClick = () => {
+		if (Date.now() - lastActionTimeRef.current < 400) {
+			handleResetClick();
+			return;
+		}
+
+		if (clickTimeoutRef.current) {
+			clearTimeout(clickTimeoutRef.current);
+			clickTimeoutRef.current = null;
+		}
+		handleReset();
+	};
+
+		const formatTime = (secs: number) => {
+		const m = Math.floor(secs / 60);
+		const s = secs % 60;
+		return `${m.toString().padStart(2, "0")}:${s.toString().padStart(2, "0")}`;
+	};
+
+	const handleReset = () => {
+		props.onPause();
+		setTimeLeft(props.initialSeconds);
+	};
+
+	const handleCustomReset = (seconds: number) => {
+		props.onPause();
+		setTimeLeft(seconds);
+		setReseting(false);
+	};
+
+	useEffect(() => {
+		const loadCustomSounds = async () => {
+			try {
+				const settingsStr = localStorage.getItem("app_settings");
+				if (!settingsStr) return;
+
+				const settings = JSON.parse(settingsStr);
+				const appData = await appDataDir();
+
+				const getAssetUrl = async (fileName?: string) => {
+					if (!fileName) return null;
+					const fullPath = await join(appData, "imported_assets", fileName);
+					return convertFileSrc(fullPath);
+				};
+
+				const customSingle = await getAssetUrl(settings.singleRing);
+				const customDouble = await getAssetUrl(settings.doubleRing);
+				const customTick = await getAssetUrl(settings.ticking);
+
+				if (customSingle) setSingleRingSrc(customSingle);
+				if (customDouble) setDoubleRingSrc(customDouble);
+				if (customTick) setTickSrc(customTick);
+			} catch (error) {
+				console.error("Load custom sound failed:", error);
+			}
+		};
+
+		loadCustomSounds();
+	}, []);
 
 	useImperativeHandle(ref, () => ({
-		setTime(seconds: number) {setTimeLeft(seconds);},
-		getTime() {return timeLeft;}
+		setTime(seconds: number) { setTimeLeft(seconds); },
+		getTime() { return timeLeft; },
+		stopT() {stopTick()}
 	}));
 
 	useEffect(() => {
@@ -40,39 +123,26 @@ const Timer = forwardRef<TimerRef, TimerProps>((props, ref) => {
 			setTimeLeft((prevSeconds) => {
 				if (prevSeconds <= 0) return 0;
 				const nextTime = prevSeconds - 1;
+				
 				if (nextTime === 30) {
-					bell();
+					playSingleRing();
 				} else if (nextTime === 5) {
-					tick();
+					playTick();
 				} else if (nextTime === 0) {
 					stopTick();
-					bell();
-					setTimeout(() => bell(), 500);
+					if (doubleRingSrc !== singleRingSrc) {
+						playDoubleRing();
+					} else {
+						playSingleRing();
+						setTimeout(() => playSingleRing(), 500);
+					}
 				}
 				return nextTime;
 			});
 		}, 1000);
 
 		return () => clearInterval(timerId);
-
-	}, [props.isRunning]);
-
-	const formatTime = (secs: number) => {
-		const m = Math.floor(secs/60);
-		const s = secs % 60;
-		return `${m.toString().padStart(2, "0")}:${s.toString().padStart(2, "0")}`
-	};
-
-	const handleReset = () => {
-		props.onPause();
-		setTimeLeft(props.initialSeconds);
-	};
-
-	const handleCustomReset = (seconds: number) => {
-		props.onPause();
-		setTimeLeft(seconds);
-		setReseting(false);
-	};
+	}, [props.isRunning, playSingleRing, playDoubleRing, playTick, stopTick, doubleRingSrc, singleRingSrc]);
 
 	return (
 		<div style={{
@@ -97,7 +167,7 @@ const Timer = forwardRef<TimerRef, TimerProps>((props, ref) => {
 				</h2>
 			)}
 
-			{/* SVG Timer  */}
+			{/* SVG Timer */}
 			<div style={{
 				width: "100%", 
 				flex: 1,
@@ -132,7 +202,11 @@ const Timer = forwardRef<TimerRef, TimerProps>((props, ref) => {
 							<button className="btn" onClick={props.onPause} disabled={!props.isRunning}>
 								暂停
 							</button>
-							<button className="btn" onClick={() => setReseting(true)} onDoubleClick={handleReset}>
+							<button 
+								className="btn" 
+								onClick={handleResetClick} 
+								onDoubleClick={handleResetDoubleClick}
+							>
 								重置
 							</button>
 						</>
@@ -146,7 +220,7 @@ const Timer = forwardRef<TimerRef, TimerProps>((props, ref) => {
 								placeholder={props.initialSeconds.toString()}
 								onChange={(e) => setSec(Math.min(parseInt(e.target.value, 10), 36000) || props.initialSeconds)}
 							/>
-							<button className="btn" onClick={() => setReseting(false)}>
+							<button className="btn" onClick={() => {lastActionTimeRef.current = Date.now(); setReseting(false);}}>
 								取消
 							</button>
 							<button className="btn" onClick={() => handleCustomReset(sec)}>
@@ -157,7 +231,7 @@ const Timer = forwardRef<TimerRef, TimerProps>((props, ref) => {
 				</div>
 			)}
 		</div>
-	)
-})
+	);
+});
 
 export default Timer;
