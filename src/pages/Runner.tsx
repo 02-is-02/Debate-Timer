@@ -506,6 +506,7 @@ function Runner() {
 				return (
 					<div style={{width: "600px"}}>
 						<Timer
+							key={`single-${currIndex}`} // 👈 加上 key 强制重新挂载
 							ref={leftTimerRef}
 							title={currStage.title}
 							initialSeconds={currStage.timeLimit}
@@ -521,24 +522,26 @@ function Runner() {
 				return (
 					<div style={{ display: "flex", flexDirection: "column", alignItems: "center" }}>
 						<div style={{ display: "flex", gap: "2rem", width: "1000px" }}>
-						<Timer
-							ref={leftTimerRef}
-							title="正方" 
-							initialSeconds={currStage.leftTimeLimit} 
-							isRunning={activeSide === "left"}
-							isHost={isHost}
-							onStart={() => setActiveSide("left")}
-							onPause={() => setActiveSide("none")}
-						/>
-						<Timer
-							ref={rightTimerRef}
-							title="反方" 
-							initialSeconds={currStage.rightTimeLimit} 
-							isRunning={activeSide === "right"}
-							isHost={isHost}
-							onStart={() => setActiveSide("right")}
-							onPause={() => setActiveSide("none")}
-						/>
+							<Timer
+								key={`left-${currIndex}`} // 👈 加上正方唯一 key
+								ref={leftTimerRef}
+								title="正方" 
+								initialSeconds={currStage.leftTimeLimit} 
+								isRunning={activeSide === "left"}
+								isHost={isHost}
+								onStart={() => setActiveSide("left")}
+								onPause={() => setActiveSide("none")}
+							/>
+							<Timer
+								key={`right-${currIndex}`} // 👈 加上反方唯一 key
+								ref={rightTimerRef}
+								title="反方" 
+								initialSeconds={currStage.rightTimeLimit} 
+								isRunning={activeSide === "right"}
+								isHost={isHost}
+								onStart={() => setActiveSide("right")}
+								onPause={() => setActiveSide("none")}
+							/>
 						</div>
 					</div>
 				);
@@ -549,15 +552,12 @@ function Runner() {
 						margin: "0 0 1.5vh 0", 
 						fontSize: "clamp(4.0rem, 2.5vh, 5.7rem)",
 						fontWeight: 600
-						}}
-					>
+					}}>
 						{currStage.title}
 					</h2>
 				);
 			default:
-				return (
-					<div>Unknown</div>
-				);
+				return <div>Unknown</div>;
 		}
 	};
 
