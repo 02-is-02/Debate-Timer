@@ -16,7 +16,7 @@ export default function MiniTimerPage({
 	const containerRef = useRef<HTMLDivElement>(null);
 	const contentRef = useRef<HTMLDivElement>(null);
 	const [stageZoom, setStageZoom] = useState(1);
-	const [settings, setSettings] = useState(() => {
+	const [settings] = useState(() => {
 		try {
 			return JSON.parse(localStorage.getItem('app_settings') || "{}");
 		} catch (e) {

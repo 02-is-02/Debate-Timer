@@ -1,13 +1,11 @@
 use iroh::{SecretKey, RelayMode, Endpoint, EndpointAddr};
 use iroh::endpoint::presets::N0;
 use std::sync::Mutex;
-use std::sync::atomic::{AtomicBool, Ordering};
 use tauri::{Emitter, State};
 use serde::{Deserialize, Serialize};
 use serde_json::Value;
 use tokio;
 use tokio::io::{AsyncBufReadExt, BufReader};
-use tokio::time::{sleep, Duration};
 use tokio_util::sync::CancellationToken;
 use reqwest::Client;
 use crate::ViewerState;
