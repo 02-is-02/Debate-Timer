@@ -140,6 +140,8 @@ function Runner() {
 			}
 
 			await handleCreateRoom();
+		} else {
+			setIsHosting(false);
 		}
 
 		setActiveRoomId(currRoomId);
@@ -506,6 +508,7 @@ function Runner() {
 				return (
 					<div style={{width: "600px"}}>
 						<Timer
+							key={`single-${currIndex}`}
 							ref={leftTimerRef}
 							title={currStage.title}
 							initialSeconds={currStage.timeLimit}
@@ -521,43 +524,53 @@ function Runner() {
 				return (
 					<div style={{ display: "flex", flexDirection: "column", alignItems: "center" }}>
 						<div style={{ display: "flex", gap: "2rem", width: "1000px" }}>
-						<Timer
-							ref={leftTimerRef}
-							title="正方" 
-							initialSeconds={currStage.leftTimeLimit} 
-							isRunning={activeSide === "left"}
-							isHost={isHost}
-							onStart={() => setActiveSide("left")}
-							onPause={() => setActiveSide("none")}
-						/>
-						<Timer
-							ref={rightTimerRef}
-							title="反方" 
-							initialSeconds={currStage.rightTimeLimit} 
-							isRunning={activeSide === "right"}
-							isHost={isHost}
-							onStart={() => setActiveSide("right")}
-							onPause={() => setActiveSide("none")}
-						/>
+							<Timer
+								key={`left-${currIndex}`}
+								ref={leftTimerRef}
+								title="正方" 
+								initialSeconds={currStage.leftTimeLimit} 
+								isRunning={activeSide === "left"}
+								isHost={isHost}
+								onStart={() => setActiveSide("left")}
+								onPause={() => setActiveSide("none")}
+							/>
+							<Timer
+								key={`right-${currIndex}`}
+								ref={rightTimerRef}
+								title="反方" 
+								initialSeconds={currStage.rightTimeLimit} 
+								isRunning={activeSide === "right"}
+								isHost={isHost}
+								onStart={() => setActiveSide("right")}
+								onPause={() => setActiveSide("none")}
+							/>
 						</div>
 					</div>
 				);
 			case "none":
 				return (
-					<h2 style={{ 
-						color: "white", 
-						margin: "0 0 1.5vh 0", 
-						fontSize: "clamp(4.0rem, 2.5vh, 5.7rem)",
-						fontWeight: 600
-						}}
-					>
-						{currStage.title}
-					</h2>
+					<div style={{
+						width: "800px",
+						display: "flex",
+						justifyContent: "center",
+						alignItems: "center",
+						textAlign: "center",
+						padding: "20px 0"
+					}}>
+						<h2 style={{ 
+							color: "white", 
+							margin: 0, 
+							fontSize: "4.5rem",
+							fontWeight: 600,
+							lineHeight: 1.4,
+							wordBreak: "break-word"
+						}}>
+							{currStage.title}
+						</h2>
+					</div>
 				);
 			default:
-				return (
-					<div>Unknown</div>
-				);
+				return <div>Unknown</div>;
 		}
 	};
 
@@ -660,14 +673,16 @@ function Runner() {
 					zIndex: 9999
 				}}
 			>
-				<button
-					className="btn-icon"
-					style={{ "--btn-theme": "var(--alt-blue)" } as React.CSSProperties }
-					onClick={handleCopyRoomCode}
-					title={"复制房间号"}
-				>
-					<Link2 size={20} />
-				</button>
+				{isHosting && (
+					<button
+						className="btn-icon"
+						style={{ "--btn-theme": "var(--alt-blue)" } as React.CSSProperties }
+						onClick={handleCopyRoomCode}
+						title={"复制房间号"}
+					>
+						<Link2 size={20} />
+					</button>
+				)}
 				<button
 					className="btn-icon"
 					style={{ "--btn-theme": "var(--alt-blue)" } as React.CSSProperties }

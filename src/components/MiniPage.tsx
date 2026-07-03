@@ -1,6 +1,8 @@
 import { JSX, useEffect, useRef, useState } from 'react';
 import { Button } from '@mui/material';
 import { Maximize } from 'lucide-react';
+import { convertFileSrc } from '@tauri-apps/api/core';
+import { appDataDir, join } from '@tauri-apps/api/path';
 
 interface MiniTimerProps {
 	onClose: () => void;
@@ -14,6 +16,33 @@ export default function MiniTimerPage({
 	const containerRef = useRef<HTMLDivElement>(null);
 	const contentRef = useRef<HTMLDivElement>(null);
 	const [stageZoom, setStageZoom] = useState(1);
+	const [settings, setSettings] = useState(() => {
+		try {
+			return JSON.parse(localStorage.getItem('app_settings') || "{}");
+		} catch (e) {
+			console.log("Read settings failed", e);
+		}
+	});
+	const [bgUrl, setBgUrl] = useState('');
+	const font = settings.font ? `"${settings.font}", sans-serif` : 'inherit';
+
+	useEffect(() => {
+			const loadBg = async () => {
+				if (settings.background) {
+					try {
+						const appData = await appDataDir();
+						const absolutePath = await join(appData, "imported_assets", settings.background);
+	
+						const safeUrl = convertFileSrc(absolutePath);
+						setBgUrl(safeUrl);
+					} catch (e) {
+						console.error("转换背景图路径失败:", e);
+					}
+				}
+			};
+	
+			loadBg();
+		}, [settings.background]);
 
 	useEffect(() => {
 		const calcZoom = () => {
@@ -56,7 +85,13 @@ export default function MiniTimerPage({
 				height: "100vh",
 				overflow: "hidden",
 				display: "flex",
-				flexDirection: "column"
+				flexDirection: "column",
+				backgroundImage: bgUrl ? `url("${bgUrl}")` : 'none',
+				backgroundSize: "cover",
+				backgroundPosition: "center",
+				backgroundRepeat: "no-repeat",
+				backgroundColor: "var(--bg)",
+				fontFamily: `${font}`
 			}}
 		>
 			<div
