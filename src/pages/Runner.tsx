@@ -2,7 +2,7 @@ import { useState, useEffect, useRef } from "react";
 import Timer, { TimerRef } from "../components/Timer";
 import { DebateStage, RoomEvent } from "../schema";
 import * as configManager from "../utils/configManager";
-import { ChevronLeft, ChevronRight, Link2, MonitorOff, Plus, SquareArrowOutUpRight } from "lucide-react";
+import { ChevronLeft, ChevronRight, Link2, Plus, SquareArrowOutUpRight } from "lucide-react";
 import MatchCard from "../components/MatchCard";
 import { Maximize, Minimize } from "lucide-react";
 import { useToast } from "../utils/Context";

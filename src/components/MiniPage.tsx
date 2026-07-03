@@ -1,7 +1,6 @@
 import { JSX, useEffect, useRef, useState } from 'react';
 import { Button } from '@mui/material';
 import { Maximize } from 'lucide-react';
-import { getCurrentWindow } from '@tauri-apps/api/window';
 
 interface MiniTimerProps {
 	onClose: () => void;

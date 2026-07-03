@@ -1,5 +1,5 @@
 import { useState, useEffect, useRef } from "react";
-import { Plus, Trash2, FileText, Share, CheckSquare, Square, CheckSquare2, ArrowLeft } from "lucide-react";
+import { Plus, Trash2, FileText, Share, CheckSquare, Square, CheckSquare2 } from "lucide-react";
 import { Dialog, DialogTitle, DialogContent, DialogContentText, DialogActions, Button } from "@mui/material";
 import EditPanel from "../components/EditPanel";
 import NewMatchConfig from "../components/NewMatchConfig";
