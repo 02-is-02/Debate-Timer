@@ -20,7 +20,7 @@ interface RemoteRoom {
 interface JoinRoomProps {
 	isActive: boolean;
 	toggleActive: () => void;
-	onJoinSuccess: (roomConfig: any) => void; 
+	onJoinSuccess: (roomConfig: any) => void;
 }
 
 export default function JoinRoomConfig({ isActive, toggleActive, onJoinSuccess }: JoinRoomProps) {
@@ -124,8 +124,11 @@ export default function JoinRoomConfig({ isActive, toggleActive, onJoinSuccess }
 									>
 										<div style={{ width: "100%" }}>
 											<div style={{ color: "white", fontWeight: "bold", display: "flex", justifyContent: "space-between" }}>
-												<span>{room.config.title || "无辩题"}</span>
+												<span>{room.config.match.name || "未命名赛制"}</span>
 												<span style={{ fontSize: "0.8rem", color: "var(--std-blue)" }}>{room.config.match?.stages.length || 0} 个环节</span>
+											</div>
+											<div style={{ color: "#afafaf", display: "flex", justifyContent: "space-between" }}>
+												<span>{room.config.title || "无辩题"}</span>
 											</div>
 											<div className="mini-label" style={{ marginTop: "4px" }}>
 												房间号: {room.match_id} | {room.config.leftName ? room.config.leftName : "未命名"} VS {room.config.rightName ? room.config.rightName : "未命名"}

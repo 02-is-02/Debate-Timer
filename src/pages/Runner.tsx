@@ -58,6 +58,8 @@ function Runner() {
 	const appWindow = getCurrentWindow();
 	const font = settings.font ? `"${settings.font}", sans-serif` : 'inherit';
 
+	console.log(matches);
+
 	const  loadData = async () =>{
 		try {
 			await configManager.initAppScope();
@@ -111,6 +113,9 @@ function Runner() {
 
 		setMatches([roomConfig.match]); 
 		setSelectedId(roomConfig.match.id);
+		if (roomConfig.match?.id) {
+			setActiveRoomId(roomConfig.match.id);
+		}
 
 		setIsHost(false);
 		setIsPlaying(true);
@@ -254,7 +259,7 @@ function Runner() {
 	}, [isPlaying, setAllowDndWindow]);
 
 	useEffect(() => {
-		loadData();
+		loadData()
 	}, []);
 
 	useEffect(() => {
@@ -498,7 +503,9 @@ function Runner() {
 	}, [currIndex, activeSide, isPlaying, isHost]);
 
 	useEffect(() => {
-		loadData();
+		if (!isPlaying) {
+			loadData();
+		}
 	}, [isPlaying]);
 
 	const renderCurrStage = () => {
