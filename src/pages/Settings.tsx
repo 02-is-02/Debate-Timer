@@ -1,7 +1,7 @@
 import { useEffect, useRef, useState } from 'react';
 import { invoke } from '@tauri-apps/api/core';
 import { open } from '@tauri-apps/plugin-dialog';
-import { TextField, MenuItem, Select, Fab, Switch, CircularProgress, Button, Divider } from '@mui/material';
+import { TextField, MenuItem, Select, Fab, Switch, CircularProgress, Divider } from '@mui/material';
 import { useToast } from '../utils/Context';
 import { RouteOff, Trash2, Upload } from 'lucide-react';
 
