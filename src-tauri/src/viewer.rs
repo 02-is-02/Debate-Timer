@@ -146,30 +146,58 @@ pub async fn start_viewer_client(
 		}
 	};
 
-	{
-		let mut lock = task_state.cancel_token.lock().unwrap();
-		*lock = None;
-	}
+	let stream_token = token.clone();
+
+
 
 	tokio::spawn(async move {
 		println!("Waiting for data stream");
-		if let Ok(recv_stream) = connection.accept_uni().await {
-			println!("Connected, listening");
-			let mut reader = BufReader::new(recv_stream);
-			let mut line = String::new();
+		let recv_stream = tokio::select! {
+			_ = stream_token.cancelled() => {
+				println!("Cancelled while waiting for stream");
+				return;
+			}
+			res = connection.accept_uni() => {
+				match res {
+					Ok(stream) => stream,
+					Err(e) => {
+						println!("Accept stream error: {}", e);
+						return;
+					}
+				}
+			}
+		};
+		
+		println!("Connected, listening");
+		let mut reader = BufReader::new(recv_stream);
+		let mut line = String::new();
 
-			while let Ok(bytes_read) = reader.read_line(&mut line).await {
-				if bytes_read == 0 {
-					println!("Connection lost");
+		loop {
+			tokio::select! {
+				_ = stream_token.cancelled() => {
+					println!("Reader cancelled by user token");
 					break;
 				}
-				println!("Raw data: {}", line.trim().to_string());
+				read_res = reader.read_line(&mut line) => {
+					match read_res {
+						Ok(bytes_read) => {
+							if bytes_read == 0 {
+								println!("Connection lost (EOF)");
+								break;
+							}
+							println!("Raw data: {}", line.trim());
 
-				if let Err(e) = app.emit("room-event", line.trim().to_string()) {
-					println!("Emit Event failed: {}", e);
+							if let Err(e) = app.emit("room-event", line.trim()) {
+								println!("Emit Event failed: {}", e);
+							}
+							line.clear();
+						}
+						Err(e) => {
+							println!("Read stream error: {}", e);
+							break;
+						}
+					}
 				}
-
-				line.clear();
 			}
 		}
 	});

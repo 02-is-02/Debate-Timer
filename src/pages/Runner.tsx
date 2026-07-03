@@ -2,7 +2,7 @@ import { useState, useEffect, useRef } from "react";
 import Timer, { TimerRef } from "../components/Timer";
 import { DebateStage, RoomEvent } from "../schema";
 import * as configManager from "../utils/configManager";
-import { ChevronLeft, ChevronRight, Link2, Plus, SquareArrowOutUpRight } from "lucide-react";
+import { ArrowLeft, ChevronLeft, ChevronRight, Link2, Plus, SquareArrowOutUpRight } from "lucide-react";
 import MatchCard from "../components/MatchCard";
 import { Maximize, Minimize } from "lucide-react";
 import { useToast } from "../utils/Context";
@@ -57,8 +57,6 @@ function Runner() {
 	const bText = activeSide === 'none' ? "开始环节" : "切换发言";
 	const appWindow = getCurrentWindow();
 	const font = settings.font ? `"${settings.font}", sans-serif` : 'inherit';
-
-	console.log(matches);
 
 	const  loadData = async () =>{
 		try {
@@ -178,6 +176,8 @@ function Runner() {
 			} catch (e) {
 				console.error("Broadcast failed:", e);
 			}
+		} else if (!isHost) {
+			await invoke('cancel_viewer_client');
 		}
 
 		leftTimerRef.current?.stopT();
@@ -674,38 +674,54 @@ function Runner() {
 				style={{
 					display: "flex",
 					flexDirection: "row",
+					justifyContent: `${isHost ? "end" : "space-between"}`,
 					position: "absolute",
 					top: "5px",
 					right: "10px",
+					paddingLeft: "20px",
+					width: "100%",
+					boxSizing: "border-box",
 					zIndex: 9999
 				}}
 			>
-				{isHosting && (
+				{!isHost && (
 					<button
 						className="btn-icon"
 						style={{ "--btn-theme": "var(--alt-blue)" } as React.CSSProperties }
-						onClick={handleCopyRoomCode}
-						title={"复制房间号"}
+						onClick={handleExit}
+						title={"退出"}
 					>
-						<Link2 size={20} />
+						<ArrowLeft size={20} />
 					</button>
 				)}
-				<button
-					className="btn-icon"
-					style={{ "--btn-theme": "var(--alt-blue)" } as React.CSSProperties }
-					onClick={toggleMiniWindow}
-					title={"小窗模式"}
-				>
-					{isMiniWindow ? <Maximize size={20} /> : <SquareArrowOutUpRight size={20} />}
-				</button>
-				<button
-					className="btn-icon"
-					style={{ "--btn-theme": "var(--alt-blue)" } as React.CSSProperties }
-					onClick={toggleFullScreen}
-					title={isFullScreen ? "退出全屏" : "全屏模式"}
-				>
-					{isFullScreen ? <Minimize size={20} /> : <Maximize size={20} />}
-				</button>
+				<div style={{ display: "flex", flexDirection: "row" }}>
+					{isHosting && (
+						<button
+							className="btn-icon"
+							style={{ "--btn-theme": "var(--alt-blue)" } as React.CSSProperties }
+							onClick={handleCopyRoomCode}
+							title={"复制房间号"}
+						>
+							<Link2 size={20} />
+						</button>
+					)}
+					<button
+						className="btn-icon"
+						style={{ "--btn-theme": "var(--alt-blue)" } as React.CSSProperties }
+						onClick={toggleMiniWindow}
+						title={"小窗模式"}
+					>
+						{isMiniWindow ? <Maximize size={20} /> : <SquareArrowOutUpRight size={20} />}
+					</button>
+					<button
+						className="btn-icon"
+						style={{ "--btn-theme": "var(--alt-blue)" } as React.CSSProperties }
+						onClick={toggleFullScreen}
+						title={isFullScreen ? "退出全屏" : "全屏模式"}
+					>
+						{isFullScreen ? <Minimize size={20} /> : <Maximize size={20} />}
+					</button>
+				</div>
 			</div>
 			
 			<div style={{
