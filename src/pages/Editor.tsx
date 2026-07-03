@@ -1,5 +1,5 @@
 import { useState, useEffect, useRef } from "react";
-import { Plus, Trash2, FileText, Share } from "lucide-react";
+import { Plus, Trash2, FileText, Share, CheckSquare, Square, CheckSquare2, ArrowLeft } from "lucide-react";
 import { Dialog, DialogTitle, DialogContent, DialogContentText, DialogActions, Button } from "@mui/material";
 import EditPanel from "../components/EditPanel";
 import NewMatchConfig from "../components/NewMatchConfig";
@@ -10,10 +10,11 @@ import { useLayoutContext } from "../components/Layout";
 
 export default function Editor() {
 	const [matches, setMatches] = useState<any[]>([]);
-	const [selectedId, setSelectedId] = useState<string>("");
+	const [selectedIds, setSelectedIds] = useState<string[]>([]);
+	const [isBulkSelecting, setIsBulkSelecting] = useState(false);
 	const [isSaving, setIsSaving] = useState(false);
 	const [isCreating, setIsCreating] = useState(false);
-	const [deletingId, setDeletingId] = useState<string | null>(null);
+	const [deletingIds, setDeletingIds] = useState<string[]>([]);
 	
 	const [pendingImport, setPendingImport] = useState<DebateStages[] | null>(null);
 	const processingIds = useRef<Set<string>>(new Set());
@@ -24,7 +25,9 @@ export default function Editor() {
 	const typingTimeRef = useRef<ReturnType<typeof setTimeout> | null>(null);
 	const pendingData = useRef<any[] | null>(null);
 
-	const selectedMatch = matches.find(m => m.id === selectedId);
+	const selectedMatch = (!isBulkSelecting && selectedIds.length === 1) 
+	? matches.find(m => m.id === selectedIds[0]) 
+	: null;
 
 	const handleUpdateStage = (stages: DebateStages) => {
 		setIsSaving(true);
@@ -48,6 +51,22 @@ export default function Editor() {
 		}, 1500);
 	};
 
+	const handleCardClick = (id: string) => {
+		if (isBulkSelecting) {
+			setSelectedIds(prev => prev.includes(id) ? prev.filter(item => item !== id) : [...prev, id]);
+		} else {
+			setSelectedIds([id]);
+		}
+	};
+
+	const handleSelectAll = () => {
+		if (selectedIds.length === matches.length) {
+			setSelectedIds([]);
+		} else {
+			setSelectedIds(matches.map(m => m.id));
+		}
+	};
+
 	const handleToggleConfig = async () => {
 		if (!await configManager.checkDefaultPath()) {
 			await configManager.initAppScope();
@@ -62,38 +81,42 @@ export default function Editor() {
 	const handleAddMatch = (matchData: DebateStages) => {
 		const updatedMatches = [matchData, ...matches];
 		setMatches(updatedMatches);
-		setSelectedId(matchData.id);
+		setSelectedIds([matchData.id]);
 
 		try {
 			configManager.saveConfigToDisk(updatedMatches);
 		} catch (error) {
 			console.error("Failed to save matches:", error);
-			showToast("保存失败", "error")
+			showToast("保存失败", "error");
 		}
 	};
 
 	const handleDeleteConfirm = async () => {
-		if (!deletingId) return;
+		if (!deletingIds || deletingIds.length === 0) return;
 
-		const updatedMatches = matches.filter((m) => m.id !== deletingId);
+		const updatedMatches = matches.filter(m => !deletingIds.includes(m.id));
 		setMatches(updatedMatches);
+		setSelectedIds(prev => prev.filter(id => !deletingIds.includes(id)));
+		setDeletingIds([]);
 
-		if (selectedId === deletingId) {
-			setSelectedId("");
-		}
-		setDeletingId(null);
+		if (updatedMatches.length === 0) setIsBulkSelecting(false);
 
 		try {
 			await configManager.saveConfigToDisk(updatedMatches);
+			showToast("删除成功", "success");
 		} catch (error) {
 			console.error("Failed to delete matches:", error);
-			showToast("保存失败", "error")
+			showToast("保存失败", "error");
 		}
 	};
 
-	const handleExportMatch = ( match: DebateStages ) => {
-		configManager.exportConfig([match]);
-	}
+	const handleExportMatch = ( ids?: string[] ) => {
+		if (ids && ids.length > 0) {
+			configManager.exportConfig(matches.filter(items => ids.includes(items.id)));
+			return;
+		}
+		configManager.exportConfig(matches.filter(items => selectedIds.includes(items.id)));
+	};
 
 	const handleImportMatch = (incomingData: any) => {
 		const importedMatches: DebateStages[] = Array.isArray(incomingData) ? incomingData : [incomingData];
@@ -157,7 +180,6 @@ export default function Editor() {
 	useEffect(() => {
 		const handleGlobalImportEvent = (e: Event) => {
 			const customEvent = e as CustomEvent;
-
 			handleImportMatch(customEvent.detail);
 		};
 
@@ -165,7 +187,7 @@ export default function Editor() {
 		return () => {
 			window.removeEventListener('trigger-global-import', handleGlobalImportEvent);
 		};
-	}, [])
+	}, []);
 
 	useEffect(() => {
 		return () => {
@@ -209,15 +231,94 @@ export default function Editor() {
 				}}
 			>
 				<NewMatchConfig isActive={isCreating} toggleActive={handleToggleConfig} onCreate={(matchData) => handleAddMatch(matchData)} />
+				
 				<div style={{ margin: "0 auto 24px auto", display: "flex", justifyContent: "space-between", alignItems: "center" }}>
-					<h1 style={{ color: "white", margin: 0, fontSize: "2rem" }}>赛制库</h1>
-					<button 
-						className="btn-start-match" 
-						onClick={handleToggleConfig}
-						style={{ padding: "10px 20px", display: "flex", alignItems: "center", gap: "8px", fontSize: "1rem" }}
-					>
-						<Plus size={20} strokeWidth={2.5} /> 新建赛制
-					</button>
+					<div style={{ display: "flex", alignItems: "center", gap: "16px" }}>
+						<h1 style={{ color: "white", margin: 0, fontSize: "2rem" }}>赛制库</h1>
+					</div>
+
+					<div style={{ display: "flex", gap: "10px", alignItems: "center" }}>
+						{isBulkSelecting ? (
+							<>
+								<button
+									className="btn-secondary" 
+									onClick={() => {
+										setIsBulkSelecting(false);
+										setSelectedIds([]);
+									}}
+									style={{
+										padding: "10px 20px", display: "flex", alignItems: "center", gap: "8px", fontSize: "1rem",
+										alignContent: "center"
+									}}
+								>
+									取消
+								</button>
+								<button
+									className="btn-secondary" 
+									onClick={handleSelectAll}
+									style={{
+										backgroundColor: `${selectedIds.length === matches.length && matches.length > 0 ? "var(--std-blue)" : "transparent"}`,
+										padding: "10px 20px", display: "flex", alignItems: "center", gap: "8px", fontSize: "1rem",
+										opacity: selectedIds.length === 0 ? 0.5 : 1,
+										cursor: selectedIds.length === 0 ? "not-allowed" : "pointer",
+										alignContent: "center"
+									}}
+								>
+									{selectedIds.length === matches.length && matches.length > 0 ? (
+										<CheckSquare2 size={18} color="white" />
+									) : (
+										<Square size={18} />
+									)}
+									全选
+								</button>
+								<button 
+									className="btn-secondary" 
+									onClick={() => setDeletingIds(selectedIds)}
+									disabled={selectedIds.length === 0}
+									style={{ 
+										padding: "10px 20px", display: "flex", alignItems: "center", gap: "8px", fontSize: "1rem", 
+										color: selectedIds.length === 0 ? "#718096" : "#c22f48", 
+										borderColor: selectedIds.length === 0 ? "#4a5568" : "#c22f48",
+										cursor: selectedIds.length === 0 ? "not-allowed" : "pointer"
+									}}
+								>
+									<Trash2 size={18} /> 删除 ({selectedIds.length})
+								</button>
+								<button 
+									className="btn-start-match" 
+									onClick={() => handleExportMatch(selectedIds)}
+									disabled={selectedIds.length === 0}
+									style={{ 
+										padding: "10px 20px", display: "flex", alignItems: "center", gap: "8px", fontSize: "1rem",
+										opacity: selectedIds.length === 0 ? 0.5 : 1,
+										cursor: selectedIds.length === 0 ? "not-allowed" : "pointer"
+									}}
+								>
+									<Share size={18} /> 导出 ({selectedIds.length})
+								</button>
+							</>
+						) : (
+							<div style={{ display: "flex", flexDirection: "row", alignItems: "center", gap: "20px"}}>
+								<button 
+									className="btn-secondary" 
+									onClick={() => {
+										setIsBulkSelecting(true);
+										if (isBulkSelecting) setSelectedIds([]);
+									}}
+									style={{ padding: "10px 20px", display: "flex", alignItems: "center", gap: "8px", fontSize: "1rem" }}
+								>
+									批量管理
+								</button>
+								<button 
+									className="btn-start-match" 
+									onClick={handleToggleConfig}
+									style={{ padding: "10px 20px", display: "flex", alignItems: "center", gap: "8px", fontSize: "1rem" }}
+								>
+									<Plus size={20} strokeWidth={2.5} /> 新建赛制
+								</button>
+							</div>
+						)}
+					</div>
 				</div>
 
 				<div style={{ display: "flex", flexDirection: "column", gap: "16px", margin: "0 auto" }}>
@@ -226,11 +327,11 @@ export default function Editor() {
 					)}
 
 					{matches.map((m) => {
-						const isSelected = selectedId === m.id;
+						const isSelected = selectedIds.includes(m.id);
 						return (
 							<div
 								key={m.id}
-								onClick={() => setSelectedId(m.id)}
+								onClick={() => handleCardClick(m.id)}
 								style={{
 									padding: "0 20px",
 									margin: "0",
@@ -243,31 +344,40 @@ export default function Editor() {
 								className={`stage-card ${isSelected ? "active" : ""}`} 
 							>
 								<div style={{ display: "flex", alignItems: "center", gap: "12px" }}>
-									<FileText size={20} color={isSelected ? "var(--sky-blue" : "var(--diag-light)"} />
+									{isBulkSelecting ? (
+										<div style={{ display: "flex", alignItems: "center" }}>
+											{isSelected ? (
+												<CheckSquare size={20} color="var(--sky-blue)" />
+											) : (
+												<Square size={20} color="var(--diag-light)" />
+											)}
+										</div>
+									) : (
+										<FileText size={20} color={isSelected ? "var(--sky-blue)" : "var(--diag-light)"} />
+									)}
 									<span style={{ color: isSelected ? "#fff" : "#e2e8f0", fontSize: "1.15rem", fontWeight: "500" }}>
 										{m.name || "未命名赛制"}
 									</span>
 								</div>
-								<div style={{ display: "flex", flexDirection: "row", gap: "10px" }}>
-									<button
-										onClick={(e) => { e.stopPropagation(); handleExportMatch(m)}}
-										className="btn-icon"
-										style={{
-											"--btn-theme": "var(--alt-blue)"
-										} as React.CSSProperties}
-									>
-										<Share size={20} />
-									</button>
-									<button
-										onClick={(e) => { e.stopPropagation(); setDeletingId(m.id); }}
-										className="btn-icon"
-										style={{
-											"--btn-theme": "#c22f48"
-										} as React.CSSProperties}
-									>
-										<Trash2 size={20} style={{ transform: "translateY(1px)" }} />
-									</button>
-								</div>
+								
+								{!isBulkSelecting && (
+									<div style={{ display: "flex", flexDirection: "row", gap: "10px" }}>
+										<button
+											onClick={(e) => { e.stopPropagation(); handleExportMatch([m.id])}}
+											className="btn-icon"
+											style={{ "--btn-theme": "var(--alt-blue)" } as React.CSSProperties}
+										>
+											<Share size={20} />
+										</button>
+										<button
+											onClick={(e) => { e.stopPropagation(); setDeletingIds([m.id]); }}
+											className="btn-icon"
+											style={{ "--btn-theme": "#c22f48" } as React.CSSProperties}
+										>
+											<Trash2 size={20} style={{ transform: "translateY(1px)" }} />
+										</button>
+									</div>
+								)}
 							</div>
 						);
 					})}
@@ -281,10 +391,9 @@ export default function Editor() {
 					right: 0,
 					height: "100%",
 					width: "100%", 
-					
 					background: "var(--bg)", 
 					borderLeft: "4px solid var(--std-blue)", 
-					transform: selectedId ? "translateX(0)" : "translateX(100%)",
+					transform: !isBulkSelecting && selectedIds.length === 1 ? "translateX(0)" : "translateX(100%)",
 					transition: "transform 1.0s cubic-bezier(0.16, 1, 0.3, 1)", 
 					zIndex: 50,
 					display: "flex",
@@ -296,7 +405,7 @@ export default function Editor() {
 						<EditPanel
 							isSaving={isSaving}
 							match={selectedMatch}
-							onBack={() => setSelectedId("")}
+							onBack={() => setSelectedIds([])}
 							onSave={handleUpdateStage}
 						/> 
 					</div>
@@ -304,17 +413,17 @@ export default function Editor() {
 			</div>
 
 			<Dialog 
-				open={deletingId !== null} 
-				onClose={() => setDeletingId(null)}
+				open={deletingIds.length > 0} 
+				onClose={() => setDeletingIds([])}
 			>
-				<DialogTitle style={{ margin: "0 0 12px 0", color: "#f8fafc" }}>确认删除此赛制？</DialogTitle>
+				<DialogTitle style={{ margin: "0 0 12px 0", color: "#f8fafc" }}>确认删除 {deletingIds.length} 个赛制？</DialogTitle>
 				<DialogContent>
 					<DialogContentText style={{ color: 'var(--diag-light)' }}>
 						该操作无法撤销，与其相关的所有环节配置都将被永久移除。
 					</DialogContentText>
 				</DialogContent>
 				<DialogActions style={{ display: "flex", justifyContent: "flex-end", gap: "12px", padding: "16px 24px" }}>
-					<Button onClick={() => setDeletingId(null)} sx={{ color: 'var(--diag-light)', border: "1px solid var(--diag-alt)" }}>
+					<Button onClick={() => setDeletingIds([])} sx={{ color: 'var(--diag-light)', border: "1px solid var(--diag-alt)" }}>
 						取消
 					</Button>
 					<Button onClick={handleDeleteConfirm} variant="contained" sx={{ backgroundColor: '#f43f5e', '&:hover': { backgroundColor: '#e11d48' } }}>
@@ -326,7 +435,7 @@ export default function Editor() {
 				open={pendingImport !== null} 
 				onClose={handleCancelImport}
 			>
-				<DialogTitle sx={{ margin: 0, paddingBottom: 1, color: "var(--lgt-blue)" }}>
+				<DialogTitle sx={{ margin: "0 0 12px 0", color: "var(--lgt-blue)" }}>
 					发现同名赛制
 				</DialogTitle>
 				<DialogContent>

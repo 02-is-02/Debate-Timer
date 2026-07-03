@@ -32,11 +32,11 @@ export default function SortableStageCard({
 	const style = {
 		transform: CSS.Translate.toString(transform),
 		transition: [
-        transition,
-        "background-color 0.2s ease, border-color 0.2s ease, box-shadow 0.2s ease"
-    ]
-        .filter(Boolean)
-        .join(", "),
+		transition,
+		"background-color 0.2s ease, border-color 0.2s ease, box-shadow 0.2s ease"
+	]
+		.filter(Boolean)
+		.join(", "),
 	};
 
 	return (
