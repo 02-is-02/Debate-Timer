@@ -1,4 +1,4 @@
-import { useEffect, useState } from 'react';
+import { useEffect } from 'react';
 import { Fab, TextField } from '@mui/material';
 import { PenLine, Square } from 'lucide-react';
 import { formatShortCut } from '../utils/formatShortCuts';
