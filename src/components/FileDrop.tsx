@@ -4,7 +4,7 @@ import { DebateStagesSchema, DebateStages } from "../schema";
 import { Download } from "lucide-react";
 import { readTextFile } from "@tauri-apps/plugin-fs";
 import { getCurrentWindow } from "@tauri-apps/api/window";
-import { useToast } from "../utils/Context";
+import { useToast } from "../utils/toasts";
 
 interface FileDropProps {
 	isActive: boolean;

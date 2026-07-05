@@ -2,21 +2,60 @@ import { writeTextFile, readTextFile, exists } from "@tauri-apps/plugin-fs";
 import { save, open as openDialog } from "@tauri-apps/plugin-dialog";
 import { join } from "@tauri-apps/api/path";
 import { invoke } from "@tauri-apps/api/core";
+import { AppSettings } from "../schema";
 
 const CONFIG_FILE_NAME = 'user-match-config.json';
+let LOAD_PROMISE: Promise<string> | null = null;
 
-function getSaveDir() {
-	try {
-		return JSON.parse(localStorage.getItem('app_settings') || "{}")?.saveDir ?? '';
-	} catch {
-		return '';
-	}
+async function getSaveDir() {
+	LOAD_PROMISE = (async () => {
+		try {
+			if (LOAD_PROMISE) {
+				return LOAD_PROMISE;
+			}
+
+			let saveDirPath = JSON.parse(localStorage.getItem('app_settings') || "{}")?.Other?.saveDir ?? '';
+
+			if (!saveDirPath) {
+				const selectedPath = await openDialog({
+					directory: true,
+					multiple: false,
+					title: '未选择默认路径：请选择赛制库的存储文件夹'
+				});
+
+				if (!selectedPath) {
+					// cancelled
+					return null;
+				}
+
+				saveDirPath = selectedPath as string;
+
+				await askRustToAllowPath(saveDirPath)
+
+				updateSaveDir(saveDirPath);
+
+				return saveDirPath;
+			}
+
+			await askRustToAllowPath(saveDirPath);
+
+			return saveDirPath;
+		} catch {
+			return null;
+		} finally {
+			setTimeout(() => {
+				LOAD_PROMISE = null;
+			}, 100);
+		}
+	})();
+
+	return LOAD_PROMISE;
 };
 
 function updateSaveDir(value: string) {
 	try {
-		const settings = JSON.parse(localStorage.getItem('app_settings') || "{}");
-		const updatedSettings = {...settings, 'saveDir': value};
+		const settings: AppSettings = JSON.parse(localStorage.getItem('app_settings') || "{}");
+		const updatedSettings = {...settings, Other: {...settings.Other, saveDir: value}};
 		localStorage.setItem('app_settings', JSON.stringify(updatedSettings));
 	} catch (e) {
 		emitToast("更新存储路径失败", 'error');
@@ -42,26 +81,10 @@ async function askRustToAllowPath(path: string) {
 
 export async function checkDefaultPath() {
 	try {
-		let saveDirPath = getSaveDir();
+		let saveDirPath = await getSaveDir();
 
 		if (!saveDirPath) {
-			const selectedPath = await openDialog({
-				directory: true,
-				multiple: false,
-				title: '未选择默认路径：请选择赛制库的存储文件夹'
-			});
-
-			if (!selectedPath) {
-				// cancelled
-				return;
-			}
-
-			saveDirPath = selectedPath as string;
-
-			await askRustToAllowPath(saveDirPath)
-
-			updateSaveDir(saveDirPath);
-
+			console.warn("saveDirPath is invalid.");
 			return false;
 		}
 
@@ -74,9 +97,12 @@ export async function checkDefaultPath() {
 
 export async function loadConfigFromDisk() {
 	try {
-		const saveDirPath = getSaveDir();
+		let saveDirPath = await getSaveDir();
 
-		if (!saveDirPath) return [];
+		if (!saveDirPath) {
+			emitToast("未选择存储路径，无法读取赛制数据！", 'warning');
+			return [];
+		}
 
 		const fullFilePath = await join(saveDirPath, CONFIG_FILE_NAME);
 		const fileExists = await exists(fullFilePath);
@@ -93,25 +119,12 @@ export async function loadConfigFromDisk() {
 
 export async function saveConfigToDisk(newConfig: any[]) {
 	try {
-		let saveDirPath = getSaveDir();
+		let saveDirPath = await getSaveDir();
 
 		if (!saveDirPath) {
-			const selectedPath = await openDialog({
-				directory: true,
-				multiple: false,
-				title: '第一次保存：请选择赛制库的存储文件夹'
-			});
-
-			if (!selectedPath) {
-				// cancelled
-				return;
-			}
-
-			saveDirPath = selectedPath as string;
-
-			await askRustToAllowPath(saveDirPath)
-
-			updateSaveDir(saveDirPath);
+			emitToast("保存失败：未找到有效的存储路径", 'error');
+			console.warn("Save cancelled or failed: saveDirPath is invalid.");
+			return false;
 		}
 
 		const fullFilePath = await join(saveDirPath, CONFIG_FILE_NAME);

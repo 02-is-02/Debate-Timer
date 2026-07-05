@@ -20,7 +20,7 @@ const MatchCard = forwardRef<HTMLDivElement, MatchCardProps>(
 		const [createRoom, setCreateRoom] = useState(() => {
 			try {
 				const savedString = localStorage.getItem('app_settings') || '{}';
-				return JSON.parse(savedString)?.autoCreateRoom ?? false;
+				return JSON.parse(savedString)?.Other?.autoCreateRoom ?? false;
 			} catch {
 				return false;
 			}
@@ -43,6 +43,7 @@ const MatchCard = forwardRef<HTMLDivElement, MatchCardProps>(
 				style={{
 					display: "flex",
 					flexDirection: "column",
+					flexShrink: 0,
 					borderRadius: "12px",
 					margin: 0,
 					transition: "all 0.3s ease",

@@ -1,6 +1,6 @@
 import React, { useState, useEffect } from "react";
 import { Outlet, useLocation, useOutletContext, useNavigate } from "react-router-dom";
-import { ToastProvider } from "../utils/Context";
+import { ToastProvider } from "../utils/toasts";
 import { ThemeProvider } from "@emotion/react";
 import { CircularProgress, createTheme } from "@mui/material";
 import MenuSidebar from "./Sidebar";

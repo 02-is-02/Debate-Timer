@@ -127,7 +127,10 @@ pub fn run() {
 			viewer::start_viewer_client,
 			viewer::cancel_viewer_client,
 			viewer::list_remote_rooms,
+			file_manager::save_settings,
 			file_manager::save_imported_file,
+			file_manager::get_imported_assets,
+			file_manager::del_imported_asset,
 			file_manager::get_system_fonts
 		])
 		.run(tauri::generate_context!())

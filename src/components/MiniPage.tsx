@@ -3,6 +3,7 @@ import { Button } from '@mui/material';
 import { Maximize } from 'lucide-react';
 import { convertFileSrc } from '@tauri-apps/api/core';
 import { appDataDir, join } from '@tauri-apps/api/path';
+import { AppSettings } from '../schema';
 
 interface MiniTimerProps {
 	onClose: () => void;
@@ -16,7 +17,7 @@ export default function MiniTimerPage({
 	const containerRef = useRef<HTMLDivElement>(null);
 	const contentRef = useRef<HTMLDivElement>(null);
 	const [stageZoom, setStageZoom] = useState(1);
-	const [settings] = useState(() => {
+	const [settings] = useState<AppSettings>(() => {
 		try {
 			return JSON.parse(localStorage.getItem('app_settings') || "{}");
 		} catch (e) {
@@ -24,14 +25,14 @@ export default function MiniTimerPage({
 		}
 	});
 	const [bgUrl, setBgUrl] = useState('');
-	const font = settings.font ? `"${settings.font}", sans-serif` : 'inherit';
+	const font = settings.Timer.font ? `"${settings.Timer.font}", sans-serif` : 'inherit';
 
 	useEffect(() => {
 			const loadBg = async () => {
-				if (settings.background) {
+				if (settings.Timer.background) {
 					try {
 						const appData = await appDataDir();
-						const absolutePath = await join(appData, "imported_assets", settings.background);
+						const absolutePath = await join(appData, "imported_assets", settings.Timer.background);
 	
 						const safeUrl = convertFileSrc(absolutePath);
 						setBgUrl(safeUrl);
@@ -42,7 +43,7 @@ export default function MiniTimerPage({
 			};
 	
 			loadBg();
-		}, [settings.background]);
+		}, [settings.Timer.background]);
 
 	useEffect(() => {
 		const calcZoom = () => {
@@ -91,6 +92,7 @@ export default function MiniTimerPage({
 				backgroundPosition: "center",
 				backgroundRepeat: "no-repeat",
 				backgroundColor: "var(--bg)",
+				color: settings.Timer.fontColor ,
 				fontFamily: `${font}`
 			}}
 		>

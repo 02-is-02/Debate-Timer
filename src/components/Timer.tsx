@@ -4,6 +4,7 @@ import { appDataDir, join } from "@tauri-apps/api/path";
 import { convertFileSrc } from "@tauri-apps/api/core";
 import defaultBellSfx from '../assets/bell.mp3';
 import defaultTickSfx from '../assets/tick.mp3';
+import { AppSettings } from "../schema";
 
 interface TimerProps {
 	title?: string;
@@ -28,6 +29,9 @@ const Timer = forwardRef<TimerRef, TimerProps>((props, ref) => {
 	const [singleRingSrc, setSingleRingSrc] = useState<string>(defaultBellSfx);
 	const [doubleRingSrc, setDoubleRingSrc] = useState<string>(defaultBellSfx);
 	const [tickSrc, setTickSrc] = useState<string>(defaultTickSfx);
+	const [timeColor, setTimeColor] = useState("#ffffffff");
+	const [timeEndingColor, setTimeEndingColor] = useState("#ff0000ff");
+	const [timeFont, setTimeFont] = useState("")
 
 	const [playSingleRing] = useSound(singleRingSrc, { volume: 0.8 });
 	const [playDoubleRing] = useSound(doubleRingSrc, { volume: 0.8 });
@@ -72,18 +76,22 @@ const Timer = forwardRef<TimerRef, TimerProps>((props, ref) => {
 
 	const handleCustomReset = (seconds: number) => {
 		props.onPause();
-		setTimeLeft(seconds);
+		setTimeLeft(seconds <= 0 ? props.initialSeconds : seconds);
 		setReseting(false);
 	};
 
 	useEffect(() => {
-		const loadCustomSounds = async () => {
+		const loadCustoms = async () => {
 			try {
 				const settingsStr = localStorage.getItem("app_settings");
 				if (!settingsStr) return;
 
-				const settings = JSON.parse(settingsStr);
+				const settings: AppSettings = JSON.parse(settingsStr);
 				const appData = await appDataDir();
+
+				setTimeColor(settings.Timer.fontColor);
+				setTimeEndingColor(settings.Timer.timerEndingColor);
+				setTimeFont(settings.Timer.timerFont ? `"${settings.Timer.timerFont}", sans-serif` : 'inherit')
 
 				const getAssetUrl = async (fileName?: string) => {
 					if (!fileName) return null;
@@ -91,9 +99,9 @@ const Timer = forwardRef<TimerRef, TimerProps>((props, ref) => {
 					return convertFileSrc(fullPath);
 				};
 
-				const customSingle = await getAssetUrl(settings.singleRing);
-				const customDouble = await getAssetUrl(settings.doubleRing);
-				const customTick = await getAssetUrl(settings.ticking);
+				const customSingle = await getAssetUrl(settings.Timer.singleRing);
+				const customDouble = await getAssetUrl(settings.Timer.doubleRing);
+				const customTick = await getAssetUrl(settings.Timer.ticking);
 
 				if (customSingle) setSingleRingSrc(customSingle);
 				if (customDouble) setDoubleRingSrc(customDouble);
@@ -103,7 +111,7 @@ const Timer = forwardRef<TimerRef, TimerProps>((props, ref) => {
 			}
 		};
 
-		loadCustomSounds();
+		loadCustoms();
 	}, []);
 
 	useImperativeHandle(ref, () => ({
@@ -157,8 +165,7 @@ const Timer = forwardRef<TimerRef, TimerProps>((props, ref) => {
 			padding: "1vh 0" 
 		}}>
 			{props.title && (
-				<h2 style={{ 
-					color: "white", 
+				<h2 style={{
 					margin: "0 0 1.5vh 0", 
 					fontSize: "clamp(2.0rem, 2.5vh, 3.7rem)",
 					fontWeight: 600
@@ -184,7 +191,8 @@ const Timer = forwardRef<TimerRef, TimerProps>((props, ref) => {
 						textAnchor="middle" 
 						fontSize={24} 
 						fontWeight="bold" 
-						fill={timeLeft <= 30 ? "#ef4444" : "white"}
+						fontFamily={timeFont}
+						fill={timeLeft <= 30 ? timeEndingColor : timeColor}
 					>
 						{formatTime(timeLeft)}
 					</text>
@@ -203,7 +211,7 @@ const Timer = forwardRef<TimerRef, TimerProps>((props, ref) => {
 								暂停
 							</button>
 							<button 
-								className="btn" 
+								className="btn"
 								onClick={handleResetClick} 
 								onDoubleClick={handleResetDoubleClick}
 							>

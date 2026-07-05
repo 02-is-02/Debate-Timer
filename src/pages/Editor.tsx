@@ -3,7 +3,7 @@ import { Plus, Trash2, FileText, Share, CheckSquare, Square, CheckSquare2 } from
 import { Dialog, DialogTitle, DialogContent, DialogContentText, DialogActions, Button } from "@mui/material";
 import EditPanel from "../components/EditPanel";
 import NewMatchConfig from "../components/NewMatchConfig";
-import { useToast } from "../utils/Context";
+import { useToast } from "../utils/toasts";
 import * as configManager from "../utils/configManager";
 import { DebateStages } from "../schema";
 import { useLayoutContext } from "../components/Layout";
@@ -72,6 +72,7 @@ export default function Editor() {
 			await configManager.initAppScope();
 			const loadedFile = await configManager.loadConfigFromDisk();
 			if (Array.isArray(loadedFile)) setMatches(loadedFile);
+			return;
 		}
 		const nextState = !isCreating;
 		setIsCreating(nextState);
@@ -221,18 +222,23 @@ export default function Editor() {
 		<div className="container" style={{ position: "relative", overflow: "hidden", display: "flex", width: "100%", height: "100vh" }}>
 			<div 
 				className="hide-scrollbar" 
-				style={{ 
+				style={{
 					flex: 1,
-					height: "100%", 
-					overflowY: "auto", 
-					padding: "30px 4vw", 
+					overflow: "hidden",
+					display: "flex",
+					flexDirection: "column",
+					height: "100%",
+					padding: "30px 4vw",
 					boxSizing: "border-box",
-					background: "var(--bg)"
+					background: "var(--bg)",
+					overflowY: "hidden"
 				}}
 			>
-				<NewMatchConfig isActive={isCreating} toggleActive={handleToggleConfig} onCreate={(matchData) => handleAddMatch(matchData)} />
-				
-				<div style={{ margin: "0 auto 24px auto", display: "flex", justifyContent: "space-between", alignItems: "center" }}>
+				<div style={{ flexShrink: 0 }}>
+					<NewMatchConfig isActive={isCreating} toggleActive={handleToggleConfig} onCreate={(matchData) => handleAddMatch(matchData)} />
+				</div>
+
+				<div style={{ margin: "0 auto 24px auto", display: "flex", justifyContent: "space-between", alignItems: "center", width: "100%", flexShrink: 0 }}>
 					<div style={{ display: "flex", alignItems: "center", gap: "16px" }}>
 						<h1 style={{ color: "white", margin: 0, fontSize: "2rem" }}>赛制库</h1>
 					</div>
@@ -321,7 +327,18 @@ export default function Editor() {
 					</div>
 				</div>
 
-				<div style={{ display: "flex", flexDirection: "column", gap: "16px", margin: "0 auto" }}>
+				<div
+					className="hide-scrollbar"
+					style={{
+						flex: 1,
+						display: "flex",
+						flexDirection: "column",
+						width: "100%",
+						gap: "16px",
+						margin: "0 auto",
+						overflowY: "auto"
+						}}
+					>
 					{matches.length === 0 && (
 						<div style={{ textAlign: "center", padding: "40px", color: "var(--alt-blue)" }}>还没有任何赛制，点击右上角新建一个吧！</div>
 					)}

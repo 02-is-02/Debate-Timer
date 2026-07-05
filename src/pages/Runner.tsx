@@ -1,11 +1,11 @@
-import { useState, useEffect, useRef } from "react";
+import React, { useState, useEffect, useRef } from "react";
 import Timer, { TimerRef } from "../components/Timer";
-import { DebateStage, RoomEvent } from "../schema";
+import { AppSettings, DebateStage, RoomEvent } from "../schema";
 import * as configManager from "../utils/configManager";
 import { ArrowLeft, ChevronLeft, ChevronRight, Link2, Plus, SquareArrowOutUpRight } from "lucide-react";
 import MatchCard from "../components/MatchCard";
 import { Maximize, Minimize } from "lucide-react";
-import { useToast } from "../utils/Context";
+import { useToast } from "../utils/toasts";
 import { useLayoutContext } from "../components/Layout";
 import { convertFileSrc, invoke } from "@tauri-apps/api/core";
 import { currentMonitor, getCurrentWindow, LogicalSize, PhysicalPosition } from "@tauri-apps/api/window";
@@ -14,6 +14,7 @@ import JoinRoomConfig from "../components/JoinRoomConfig";
 import { Button, Dialog, DialogActions, DialogContent, DialogContentText, DialogTitle } from "@mui/material";
 import MiniTimerPage from "../components/MiniPage";
 import { appDataDir, join } from "@tauri-apps/api/path";
+import { formatShortCut, renderFriendlyShortcuts } from "../utils/formatShortCuts";
 
 function Runner() {
 	const [isFullScreen, setIsFullscreen] = useState(false);
@@ -31,7 +32,7 @@ function Runner() {
 	const [isHost, setIsHost] = useState(false);
 	const [isHosting, setIsHosting] = useState(false);
 	const [showHostCode, setShowHostCode] = useState(false);
-	const [settings, setSettings] = useState(() => {
+	const [settings, setSettings] = useState<AppSettings>(() => {
 		try {
 			return JSON.parse(localStorage.getItem('app_settings') || "{}");
 		} catch (e) {
@@ -48,6 +49,8 @@ function Runner() {
 	const focusRef = useRef<{ [key: string]: HTMLDivElement | null}>({});
 	const leftTimerRef = useRef<TimerRef>(null);
 	const rightTimerRef = useRef<TimerRef>(null);
+	const timeBackupRef = useRef<{ left?: number; right?: number }>({});
+	const windowLockRef = useRef(false);
 
 	const selectedMatch = matches.find((m) => m.id === selectedId);
 	const stages: DebateStage[] = selectedMatch?.stages || [];
@@ -56,7 +59,17 @@ function Runner() {
 	const isLastPage = stages.length > 0 && currIndex === stages.length - 1;
 	const bText = activeSide === 'none' ? "开始环节" : "切换发言";
 	const appWindow = getCurrentWindow();
-	const font = settings.font ? `"${settings.font}", sans-serif` : 'inherit';
+	const font = settings.Timer.font ? `"${settings.Timer.font}", sans-serif` : 'inherit';
+	const shortcutsConfig = [
+		{ label: "开始/暂停（单计时器时），开始/切换（多计时器时）：", key: settings.HotKeys.startSwapPause, hostOnly: true },
+		{ label: "开始（单计时器时），开始左边计时器（双计时器时）：", key: settings.HotKeys.startLeft, hostOnly: true },
+		{ label: "开始右边计时器（双计时器时）：", key: settings.HotKeys.startRight, hostOnly: true },
+		{ label: "上一页：", key: settings.HotKeys.prev, hostOnly: true },
+		{ label: "下一页：", key: settings.HotKeys.next, hostOnly: true },
+		{ label: "切换全屏模式：", key: settings.HotKeys.fullscreen },
+		{ label: "切换小窗模式：", key: settings.HotKeys.miniWindow },
+		{ label: "退出：", key: settings.HotKeys.exit },
+	];
 
 	const  loadData = async () =>{
 		try {
@@ -166,7 +179,7 @@ function Runner() {
 	};
 
 	const handleExit = async () => {
-		if (isHost && activeRoomId) {
+		if (isHosting && activeRoomId) {
 			try {
 				const endPacket: RoomEvent = { type: "end" };
 				await invoke('broadcast_packet', {
@@ -186,8 +199,10 @@ function Runner() {
 		setIsPlaying(false);
 		setActiveSide("none");
 		setCurrIndex(0);
-		if (document.fullscreenElement) {
-			document.exitFullscreen();
+		if (await appWindow.isFullscreen()) {
+			await appWindow.setFullscreen(false);
+			await appWindow.setSize(new LogicalSize(1280, 720));
+			await appWindow.center();
 		}
 		try {
 			await invoke('close_host_room', { matchId: activeRoomId });
@@ -204,28 +219,51 @@ function Runner() {
 	}
 
 	const toggleFullScreen = async () => {
-		if (!document.fullscreenElement) {
-			if (fullScreenContainer.current) {
-				await fullScreenContainer.current.requestFullscreen().catch(err => {
-					console.log("Failed to request fullscreen", err);
-					showToast('请求全屏失败', 'error')
-				})
+		if (windowLockRef.current) return;
+		windowLockRef.current = true;
+		try {
+			const currentIsFullscreen = await appWindow.isFullscreen();
+
+			if (!currentIsFullscreen) {
+				if (isMiniWindow) {
+					setIsMiniWindow(false);
+					await appWindow.setAlwaysOnTop(false);
+					await appWindow.setDecorations(true);
+					await new Promise(resolve => setTimeout(resolve, 200));
+				}
+				await appWindow.setFullscreen(true);
+			} else {
+				await appWindow.setFullscreen(false);
 			}
-		} else {
-			if (document.exitFullscreen) {
-				await document.exitFullscreen();
-			}
+		} catch (err) {
+			console.error("Failed to swap fullscreen:", err);
+			showToast('全屏状态切换失败', 'error');
+		} finally {
+			windowLockRef.current = false;
 		}
 	};
 
 	const toggleMiniWindow = async () => {
+		if (windowLockRef.current) return;
+		windowLockRef.current = true;
 		try {
+			timeBackupRef.current = {
+				left: leftTimerRef.current?.getTime?.(),
+				right: rightTimerRef.current?.getTime?.()
+			}
+
+			const currentIsFullscreen = await appWindow.isFullscreen();
+			if (currentIsFullscreen) {
+				await appWindow.setFullscreen(false);
+				await new Promise(resolve => setTimeout(resolve, 200));
+			}
+
 			if (isMiniWindow) {
+				setIsMiniWindow(false);
 				await appWindow.setDecorations(true);
 				await appWindow.setSize(new LogicalSize(1280, 720));
 				await appWindow.setAlwaysOnTop(false);
 				await appWindow.center();
-				setIsMiniWindow(false);
 			} else {
 				await appWindow.setDecorations(false);
 				await appWindow.setSize(new LogicalSize(320, 240));
@@ -247,6 +285,8 @@ function Runner() {
 		} catch (e) {
 			showToast("切换小窗失败", "error");
 			console.error("Failed to swap mini window: ", e);
+		} finally {
+			windowLockRef.current = false;
 		}
 	}
 
@@ -288,10 +328,10 @@ function Runner() {
 
 	useEffect(() => {
 		const loadBg = async () => {
-			if (settings.background) {
+			if (settings.Timer.background) {
 				try {
 					const appData = await appDataDir();
-					const absolutePath = await join(appData, "imported_assets", settings.background);
+					const absolutePath = await join(appData, "imported_assets", settings.Timer.background);
 
 					const safeUrl = convertFileSrc(absolutePath);
 					setBgUrl(safeUrl);
@@ -302,69 +342,87 @@ function Runner() {
 		};
 
 		loadBg();
-	}, [settings.background]);
+	}, [settings.Timer.background]);
 
 	useEffect(() => {
-	const handleKeyDown  = (e: KeyboardEvent) => {
-		if (e.key === 'Escape') handleExit();
-		if (!isHost) return;
-		if (e.repeat) return;
-		if (e.ctrlKey || e.altKey || e.metaKey) return;
+		if (timeBackupRef.current.left !== undefined) {
+			leftTimerRef.current?.setTime?.(timeBackupRef.current.left);
+		}
+		if (timeBackupRef.current.right !== undefined) {
+			rightTimerRef.current?.setTime?.(timeBackupRef.current.right);
+		}
+		timeBackupRef.current = {};
+	}, [isMiniWindow]);
 
-		const target = e.target as HTMLElement;
-		if (
-			target.tagName === "INPUT" || 
-			target.tagName === "TEXTAREA" ||
-			target.tagName === "SELECT" ||
-			target.isContentEditable
-		) {
-			return;
+	useEffect(() => {
+		const handleSwapOrStart = () => {
+			if (!currStage) return;
+			switch (currStage.type) {
+				case 'free':
+					setActiveSide(activeSide === "none" ? (currStage.start || "left") : (activeSide === "left" ? "right" : "left"));
+					break;
+				case 'double':
+					setActiveSide(activeSide === "none" ? "left" : (activeSide === "left" ? "right" : "left"));
+					break;
+				case 'single':
+					setActiveSide(activeSide === 'none' ? 'left' : 'none');
+					break;
+				case 'none':
+					break;
+			}
 		};
 
-		switch (e.key) {
-			case 'ArrowLeft':
-				if (!isFirstPage) handlePrev();
-				break;
-			case 'ArrowRight':
-				if (!isLastPage) handleNext();
-				break;
-			case 'Escape':
-				handleExit();
-				break;
-			case ' ':
-				e.preventDefault();
-				if (!currStage) return; 
-				switch (currStage.type) {
-					case 'free':
-						setActiveSide(activeSide === "none" ? (currStage.start || "left") : (activeSide === "left" ? "right" : "left"));
-						break;
-					case 'double':
-						setActiveSide(activeSide === "none" ?  "left" : (activeSide === "left" ? "right" : "left"));
-						break;
-					case 'single':
-						setActiveSide(activeSide === 'none' ? 'left' : 'none');
-						break;
-					case 'none':
-						break;
-				}
-				break;
-			case ',':
-			case '<':
-				if (currStage) setActiveSide('left');
-				break;
-			case '.':
-			case '>':
-				if (currStage) setActiveSide('right');
-				break;
-			case 'F11':
-				toggleFullScreen();
-		}
-	};
-	window.addEventListener('keydown', handleKeyDown);
+		const handleKeyDown  = (e: KeyboardEvent) => {
+			const target = e.target as HTMLElement;
+			if (
+				target.tagName === "INPUT" || 
+				target.tagName === "TEXTAREA" ||
+				target.tagName === "SELECT" ||
+				target.isContentEditable
+			) {
+				return;
+			};
+			const currentShortcut = formatShortCut(e);
+			if (!currentShortcut) return;
+			switch (currentShortcut) {
+				case settings.HotKeys.exit:
+					handleExit();
+					return;
+				case settings.HotKeys.fullscreen:
+					toggleFullScreen();
+					return;
+				case settings.HotKeys.miniWindow:
+					toggleMiniWindow();
+					return
+			}
 
-	return () => {
-		window.removeEventListener('keydown', handleKeyDown);
-	};
+			if (!isHost) return;
+
+			switch (currentShortcut) {
+				case settings.HotKeys.prev:
+					if (!isFirstPage) handlePrev();
+					return;
+				case settings.HotKeys.next:
+					if (!isLastPage) handleNext();
+					return;
+				case settings.HotKeys.startSwapPause:
+					e.preventDefault();
+					if (!currStage) return; 
+					handleSwapOrStart();
+					return;
+				case settings.HotKeys.startLeft:
+					if (currStage) setActiveSide('left');
+					return;
+				case settings.HotKeys.startRight:
+					if (currStage) setActiveSide('right');
+					return;
+			}
+		};
+		window.addEventListener('keydown', handleKeyDown);
+
+		return () => {
+			window.removeEventListener('keydown', handleKeyDown);
+		};
 	}, [handlePrev, handleNext, handleExit, setActiveSide, isFirstPage, isLastPage, currStage, activeSide]);
 
 	useEffect(() => {
@@ -564,8 +622,7 @@ function Runner() {
 						textAlign: "center",
 						padding: "20px 0"
 					}}>
-						<h2 style={{ 
-							color: "white", 
+						<h2 style={{
 							margin: 0, 
 							fontSize: "4.5rem",
 							fontWeight: 600,
@@ -583,28 +640,23 @@ function Runner() {
 
 	if (!isPlaying) {
 		return (
-			<div className="container" style={{ overflow: "hidden" }}>
+			<div className="container" style={{ position: "relative", overflow: "hidden", display: "flex", width: "100%", height: "100vh" }}>
 				<div 
 					className="hide-scrollbar"
-					ref={scrollContainer}
 					style={{ 
-						position: "relative",
+						flex: 1,
+						display: "flex",
+						flexDirection: "column",
 						width: "100%",
 						height: "100%",
-						overflowY: "auto",
-						overflowX: "hidden",
-						padding: "25px 4vw 700px 4vw", 
+						overflow: "hidden",
+						padding: "25px 4vw 0 4vw",
 						boxSizing: "border-box",
-						background: "var(--bg)",
-						scrollPaddingTop: "20px"
+						background: "var(--bg)"
 					}}
 				>
-					<div style={{ margin: "0 auto 24px auto", display: "flex", justifyContent: "space-between", alignItems: "center" }}>
-						<h1 style={{
-							color: "white",
-							margin: 0, 
-							fontSize: "2rem"
-						}}>
+					<div style={{ margin: "0 auto 24px auto", display: "flex", flexShrink: 0, width: "100%", justifyContent: "space-between", alignItems: "center" }}>
+						<h1 style={{ color: "white", margin: 0, fontSize: "2rem" }}>
 							赛制选择
 						</h1>
 						<button 
@@ -616,19 +668,25 @@ function Runner() {
 						</button>
 					</div>
 					
-					<div 
+					<div
+						className="hide-scrollbar"
+						ref={scrollContainer}
 						style={{
+							position: "relative",
+							flex: 1,
 							display: "flex",
 							flexDirection: "column",
+							width: "100%",
+							overflowY: "auto",
 							gap: "16px",
-							maxWidth: "1200px",
-							margin: "0 auto"
+							paddingBottom: "75vh",
+							scrollPaddingTop: "10px"
 						}}
 					>
 						{matches.map((m, index) => (
 							<MatchCard 
 								key={m.id}
-								ref={(elm) => {focusRef.current[m.id] = elm}}
+								ref={(elm) => { focusRef.current[m.id] = elm; }}
 								m={m}
 								isExpanded={selectedId === m.id}
 								onToggle={() => handleSelectMatch(m.id, index)}
@@ -638,6 +696,7 @@ function Runner() {
 						))}
 					</div>
 				</div>
+
 				<JoinRoomConfig 
 					isActive={showJoin} 
 					toggleActive={() => setShowJoin(false)}
@@ -658,7 +717,7 @@ function Runner() {
 
 	return (
 		<div 
-			className="container" 
+			className="container hide-scrollbar" 
 			ref={fullScreenContainer}
 			style={{ 
 				position: "relative",
@@ -667,9 +726,42 @@ function Runner() {
 				backgroundPosition: "center",
 				backgroundRepeat: "no-repeat",
 				backgroundColor: "var(--bg)",
-				fontFamily: `${font}`
+				fontFamily: `${font}`,
+				color: `${settings.Timer.fontColor}`
 			}}
 		>
+			{settings.HotKeys.isDisplaying && (
+				<div className="hotkey-overlay">
+					<dl
+						style={{
+							display: "grid",
+							gridTemplateColumns: "max-content 1fr",
+							rowGap: "clamp(2px, 0.6vh, 8px)",
+							columnGap: "clamp(4px, 0.8vw, 12px)",
+							margin: 0
+						}}
+					>
+						{shortcutsConfig
+							.filter(item => !item.hostOnly || isHost)
+							.map((item) => (
+								<React.Fragment key={item.label}>
+									<dt
+										className="mini-label"
+										style={{ justifyContent: "right", color: `${settings.Timer.fontColor}`, fontSize: "clamp(0.65rem, 1.2vh + 0.2vw, 0.95rem)" }}
+									>
+										{item.label}
+									</dt>
+									<dd
+										className="mini-label" 
+										style={{ justifyContent: "left", margin: 0, color: `${settings.Timer.fontColor}`, fontSize: "clamp(0.65rem, 1.2vh + 0.2vw, 0.95rem)" }}
+									>
+										{renderFriendlyShortcuts(item.key)}
+									</dd>
+								</React.Fragment>
+							))}
+					</dl>
+				</div>
+			)}
 			<div
 				style={{
 					display: "flex",
@@ -744,13 +836,13 @@ function Runner() {
 				</h3>
 
 				<div style={{ display: "flex", flexDirection: "row", width: "100%", justifyContent: "space-between"}}>
-					<h2 style={{ margin: 0, color: "white" }}>{leftName}</h2>
-					<h2 style={{ margin: 0, color: "white" }}>{rightName}</h2>
+					<h2 style={{ margin: 0 }}>{leftName}</h2>
+					<h2 style={{ margin: 0 }}>{rightName}</h2>
 				</div>
 
 				{/* render current stage */}
 				<div style={{ flex: 1, display: "flex", flexDirection: "column", justifyContent: "center", alignItems: "center"}}>
-					<h1 style={{ fontSize: "clamp(3rem, 10vh, 3.8rem)", margin: "0 0 8vh 0", color: "white" }}>{title}</h1>
+					<h1 style={{ fontSize: "clamp(3rem, 10vh, 3.8rem)", margin: "0 0 8vh 0" }}>{title}</h1>
 					{renderCurrStage()}
 				</div>
 

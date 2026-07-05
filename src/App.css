@@ -679,6 +679,18 @@ textarea,
 				0 0 20px 5px #9cdcfe4f;
 }
 
+.hotkey-overlay {
+	position: absolute;
+	padding: 15px;
+	max-width: clamp(300px, 40vw, 650px);
+	opacity: 0.2;
+	transition: opacity 0.3s ease;
+}
+
+.hotkey-overlay:hover {
+	opacity: 1;
+}
+
 @keyframes contentFadeIn {
 	from {
 		opacity: 0;

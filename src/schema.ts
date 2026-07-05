@@ -69,3 +69,42 @@ export const RoomEventSchema = z.discriminatedUnion("type", [
 ])
 
 export type RoomEvent = z.infer<typeof RoomEventSchema>;
+
+// Settings
+export const OtherSettingsSchema = z.object({
+	apiKey: z.string().default(""),
+	model: z.string().default("gemini-2.5-flash"),
+	autoCreateRoom: z.boolean().default(false),
+	saveDir: z.string().default("")
+});
+
+export const TimerSettingsSchema = z.object({
+	background: z.string().default(""),
+	singleRing: z.string().default(""),
+	doubleRing: z.string().default(""),
+	ticking: z.string().default(""),
+	font: z.string().default(""),
+	fontColor: z.string().default("#ffffffff"),
+	timerFont: z.string().default(""),
+	timerEndingColor: z.string().default("#ff0000")
+});
+
+export const HotKeysSettingsSchema = z.object({
+	isDisplaying: z.boolean().default(true),
+	prev: z.string().default("ArrowLeft"),
+	next: z.string().default("ArrowRight"),
+	startSwapPause: z.string().default("Space"),
+	startLeft: z.string().default("Comma"),
+	startRight: z.string().default("Period"),
+	fullscreen: z.string().default("F11"),
+	miniWindow: z.string().default("Shift+F11"),
+	exit: z.string().default("Escape")
+});
+
+export const AppSettingsSchema = z.object({
+	Other: OtherSettingsSchema.default(OtherSettingsSchema.parse({})),
+	Timer: TimerSettingsSchema.default(TimerSettingsSchema.parse({})),
+	HotKeys: HotKeysSettingsSchema.default(HotKeysSettingsSchema.parse({}))
+});
+
+export type AppSettings = z.infer<typeof AppSettingsSchema>;

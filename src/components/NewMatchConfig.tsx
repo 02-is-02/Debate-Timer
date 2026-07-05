@@ -1,12 +1,12 @@
 import { Button, TextField, Box, Chip, Stack, isEmpty } from "@mui/material";
 import { LoadingButton } from "@mui/lab";
-import { DebateStage, DebateStages, DebateStagesSchema } from "../schema";
+import { AppSettings, AppSettingsSchema, DebateStage, DebateStages, DebateStagesSchema } from "../schema";
 import React, { useState, useRef } from "react";
 import { Image, File as FileIcon } from "lucide-react";
 import { useTauriDropZone } from "../hooks/useTauriDropZone";
 import { readFile } from "@tauri-apps/plugin-fs";
 import { getCurrentWindow } from "@tauri-apps/api/window";
-import { useToast } from "../utils/Context";
+import { useToast } from "../utils/toasts";
 import { fileToBase64 } from "../utils/configManager";
 import { invoke } from "@tauri-apps/api/core";
 
@@ -50,16 +50,16 @@ export default function NewMatchConfig({ isActive, toggleActive, onCreate }: new
 
 	const handleGenerate = async () => {
 		const newId = `M-${crypto.randomUUID()}`;
-		let settings: any = {};
+		let settings: AppSettings;
 		try {
 			settings = JSON.parse(localStorage.getItem('app_settings') || '{}');
 		} catch {
-			settings = {};
+			settings = AppSettingsSchema.parse({});
 		}
 		const apiNeeded = !isEmpty(text.trim()) || attachments.length > 0;
-		console.log("API needed:", apiNeeded, "Saved API Key:", !!settings?.apiKey, "Prompt text:", text.trim(), "Attachments:", attachments);
+		console.log("API needed:", apiNeeded, "Saved API Key:", !!settings?.Other.apiKey, "Prompt text:", text.trim(), "Attachments:", attachments);
 
-		if (!settings?.apiKey && apiNeeded) {
+		if (!settings?.Other.apiKey && apiNeeded) {
 			showToast("请先在设置中填写 Gemini API Key！", "error");
 			return;
 		}
@@ -94,8 +94,8 @@ export default function NewMatchConfig({ isActive, toggleActive, onCreate }: new
 				matchName: name.trim() ? name.trim() : null,
 				promptText: text.trim(),
 				attachments: processedFiles,
-				apiKey: settings?.apiKey,
-				model: settings?.model
+				apiKey: settings?.Other.apiKey,
+				model: settings?.Other.model
 			};
 
 			const data = await invoke("generate_stage", { payload });

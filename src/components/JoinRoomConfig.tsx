@@ -1,7 +1,7 @@
 import { LoadingButton } from "@mui/lab";
 import { Button, CircularProgress } from "@mui/material";
 import { invoke } from "@tauri-apps/api/core";
-import { useToast } from "../utils/Context";
+import { useToast } from "../utils/toasts";
 import { useState, useEffect } from "react";
 import { RefreshCw } from "lucide-react";
 import { DebateStages } from "../schema";
