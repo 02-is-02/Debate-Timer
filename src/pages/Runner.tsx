@@ -1,6 +1,6 @@
 import React, { useState, useEffect, useRef } from "react";
 import Timer, { TimerRef } from "../components/Timer";
-import { AppSettings, AppSettingsSchema, DebateStage, RoomEvent } from "../schema";
+import { AppSettings, DebateStage, RoomEvent } from "../schema";
 import * as configManager from "../utils/configManager";
 import { ArrowLeft, ChevronLeft, ChevronRight, Link2, Plus, SquareArrowOutUpRight } from "lucide-react";
 import MatchCard from "../components/MatchCard";
@@ -34,17 +34,9 @@ function Runner() {
 	const [showHostCode, setShowHostCode] = useState(false);
 	const [settings, setSettings] = useState<AppSettings>(() => {
 		try {
-			const local = JSON.parse(localStorage.getItem('app_settings') || "{}");
-			const DEFAULT_SETTINGS: AppSettings = AppSettingsSchema.parse({});
-			return {
-				...DEFAULT_SETTINGS,
-				...local,
-				Other: { ...DEFAULT_SETTINGS.Other, ...(local.Other || {}) },
-				Timer: { ...DEFAULT_SETTINGS.Timer, ...(local.Timer || {}) },
-				HotKeys: { ...DEFAULT_SETTINGS.HotKeys, ...(local.HotKeys || {}) }
-			};
+			return JSON.parse(localStorage.getItem('app_settings') || "{}");
 		} catch (e) {
-			return AppSettingsSchema.parse({});
+			console.log("Read settings failed", e);
 		}
 	});
 	const [bgUrl, setBgUrl] = useState('');
@@ -67,16 +59,16 @@ function Runner() {
 	const isLastPage = stages.length > 0 && currIndex === stages.length - 1;
 	const bText = activeSide === 'none' ? "开始环节" : "切换发言";
 	const appWindow = getCurrentWindow();
-	const font = settings?.Timer?.font ? `"${settings?.Timer?.font}", sans-serif` : 'inherit';
+	const font = settings.Timer.font ? `"${settings.Timer.font}", sans-serif` : 'inherit';
 	const shortcutsConfig = [
-		{ label: "开始/暂停（单计时器时），开始/切换（多计时器时）：", key: settings?.HotKeys?.startSwapPause, hostOnly: true },
-		{ label: "开始（单计时器时），开始左边计时器（双计时器时）：", key: settings?.HotKeys?.startLeft, hostOnly: true },
-		{ label: "开始右边计时器（双计时器时）：", key: settings?.HotKeys?.startRight, hostOnly: true },
-		{ label: "上一页：", key: settings?.HotKeys?.prev, hostOnly: true },
-		{ label: "下一页：", key: settings?.HotKeys?.next, hostOnly: true },
-		{ label: "切换全屏模式：", key: settings?.HotKeys?.fullscreen },
-		{ label: "切换小窗模式：", key: settings?.HotKeys?.miniWindow },
-		{ label: "退出：", key: settings?.HotKeys?.exit },
+		{ label: "开始/暂停（单计时器时），开始/切换（多计时器时）：", key: settings.HotKeys.startSwapPause, hostOnly: true },
+		{ label: "开始（单计时器时），开始左边计时器（双计时器时）：", key: settings.HotKeys.startLeft, hostOnly: true },
+		{ label: "开始右边计时器（双计时器时）：", key: settings.HotKeys.startRight, hostOnly: true },
+		{ label: "上一页：", key: settings.HotKeys.prev, hostOnly: true },
+		{ label: "下一页：", key: settings.HotKeys.next, hostOnly: true },
+		{ label: "切换全屏模式：", key: settings.HotKeys.fullscreen },
+		{ label: "切换小窗模式：", key: settings.HotKeys.miniWindow },
+		{ label: "退出：", key: settings.HotKeys.exit },
 	];
 
 	const  loadData = async () =>{
@@ -321,17 +313,10 @@ function Runner() {
 	useEffect(() => {
 		const reloadSettings = () => {
 			try {
-				const local = JSON.parse(localStorage.getItem('app_settings') || "{}");
-				const DEFAULT_SETTINGS = AppSettingsSchema.parse({});
-				setSettings({
-					...DEFAULT_SETTINGS,
-					...local,
-					Other: { ...DEFAULT_SETTINGS?.Other, ...(local?.Other || {}) },
-					Timer: { ...DEFAULT_SETTINGS?.Timer, ...(local?.Timer || {}) },
-					HotKeys: { ...DEFAULT_SETTINGS?.HotKeys, ...(local?.HotKeys || {}) }
-				});
+				const latestSettings = JSON.parse(localStorage.getItem('app_settings') || "{}");
+				setSettings(latestSettings);
 			} catch (e) {
-				console.error("Reload settings failed: ", e);
+				console.error("Reload settings faild: ", e);
 			}
 		};
 		window.addEventListener('app_settings_updated', reloadSettings);
@@ -343,10 +328,10 @@ function Runner() {
 
 	useEffect(() => {
 		const loadBg = async () => {
-			if (settings?.Timer?.background) {
+			if (settings.Timer.background) {
 				try {
 					const appData = await appDataDir();
-					const absolutePath = await join(appData, "imported_assets", settings?.Timer?.background);
+					const absolutePath = await join(appData, "imported_assets", settings.Timer.background);
 
 					const safeUrl = convertFileSrc(absolutePath);
 					setBgUrl(safeUrl);
@@ -357,7 +342,7 @@ function Runner() {
 		};
 
 		loadBg();
-	}, [settings?.Timer?.background]);
+	}, [settings.Timer.background]);
 
 	useEffect(() => {
 		if (timeBackupRef.current.left !== undefined) {
@@ -742,10 +727,10 @@ function Runner() {
 				backgroundRepeat: "no-repeat",
 				backgroundColor: "var(--bg)",
 				fontFamily: `${font}`,
-				color: `${settings?.Timer?.fontColor}`
+				color: `${settings.Timer.fontColor}`
 			}}
 		>
-			{settings?.HotKeys?.isDisplaying && (
+			{settings.HotKeys.isDisplaying && (
 				<div className="hotkey-overlay">
 					<dl
 						style={{
@@ -762,13 +747,13 @@ function Runner() {
 								<React.Fragment key={item.label}>
 									<dt
 										className="mini-label"
-										style={{ justifyContent: "right", color: `${settings?.Timer?.fontColor}`, fontSize: "clamp(0.65rem, 1.2vh + 0.2vw, 0.95rem)" }}
+										style={{ justifyContent: "right", color: `${settings.Timer.fontColor}`, fontSize: "clamp(0.65rem, 1.2vh + 0.2vw, 0.95rem)" }}
 									>
 										{item.label}
 									</dt>
 									<dd
 										className="mini-label" 
-										style={{ justifyContent: "left", margin: 0, color: `${settings?.Timer?.fontColor}`, fontSize: "clamp(0.65rem, 1.2vh + 0.2vw, 0.95rem)" }}
+										style={{ justifyContent: "left", margin: 0, color: `${settings.Timer.fontColor}`, fontSize: "clamp(0.65rem, 1.2vh + 0.2vw, 0.95rem)" }}
 									>
 										{renderFriendlyShortcuts(item.key)}
 									</dd>

@@ -153,7 +153,7 @@ export default function Settings() {
 	}
 
 	const handleResetPath = () => {
-		const nextSettings = { ...settings, Other: { ...settings.Other, saveDir: '' } };
+		const nextSettings = { ...settings, 'saveDir': '' };
 		
 		setSettings(nextSettings);
 		setIsSaving(false);
