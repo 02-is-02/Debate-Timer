@@ -681,6 +681,7 @@ textarea,
 
 .hotkey-overlay {
 	position: absolute;
+	left: 0;
 	padding: 15px;
 	max-width: clamp(300px, 40vw, 650px);
 	opacity: 0.2;

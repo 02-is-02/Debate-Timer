@@ -736,6 +736,7 @@ function Runner() {
 			ref={fullScreenContainer}
 			style={{ 
 				position: "relative",
+				justifyContent: "center",
 				backgroundImage: bgUrl ? `url("${bgUrl}")` : 'none',
 				backgroundSize: "cover",
 				backgroundPosition: "center",
@@ -857,7 +858,7 @@ function Runner() {
 
 				{/* render current stage */}
 				<div style={{ flex: 1, display: "flex", flexDirection: "column", justifyContent: "center", alignItems: "center"}}>
-					<h1 style={{ fontSize: "clamp(3rem, 10vh, 3.8rem)", margin: "0 0 8vh 0" }}>{title}</h1>
+					<h1 style={{ fontSize: "clamp(2rem, 8vh, 3.2rem)", margin: "0 0 4vh 0", textAlign: "center" }}>{title}</h1>
 					{renderCurrStage()}
 				</div>
 
@@ -867,7 +868,7 @@ function Runner() {
 						display: "flex", 
 						justifyContent: "space-between", 
 						alignItems: "center",
-						marginTop: "2rem", 
+						marginBottom: "0rem", 
 						paddingTop: "1rem"}}>
 						<div style={{flex: 1, display: "flex", justifyContent: "left", gap: "1rem"}}>
 							<button className="btn" onClick={handlePrev} disabled={isFirstPage}>
